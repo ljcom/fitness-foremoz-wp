@@ -1,48 +1,60 @@
-# Foremoz Fitness Whitepaper v0.1 - Summary
+# Foremoz Fitness Whitepaper v0.2 - Summary
 
 ## What Foremoz Fitness Is
 
-Foremoz Fitness is a vertical SaaS for day-to-day fitness center operations. It targets gyms and fitness studios that need predictable workflows for membership, booking, attendance, and payment recording without expanding into heavy ERP scope.
+Foremoz Fitness adalah vertical SaaS untuk operasional gym dan fitness studio dengan arsitektur event-driven.
 
-The system is event-driven by design:
-- EventDB is the write layer.
-- Domain actions append immutable events.
-- projections materialize read model tables for fast UI queries.
+Write layer:
+- EventDB append-only event store.
+
+Read layer:
+- projection worker membentuk read model untuk query layar operasional.
+
+## Product Surfaces
+
+Surface utama:
+- `fitness.foremoz.com/web`: landing global Foremoz Fitness.
+- `fitness.foremoz.com/a/<account>`: public account page untuk promosi kegiatan dan konversi member.
+- Internal PWA app untuk role operasional.
 
 ## Who It Serves
 
-Primary tenants:
-- Independent gyms.
-- Boutique fitness studios.
-- PT-focused studios.
-- Multi-branch fitness operators.
-
-Foremoz Fitness is optimized for operators that run recurring subscriptions, class schedules, PT session packages, and attendance control.
+- gym dan studio owner/operator.
+- staff front desk.
+- sales untuk prospek dan follow-up.
+- PT untuk mencatat aktivitas/sesi member.
+- member untuk self-service membership dan PT booking.
 
 ## Core Capabilities
 
-Operational capabilities in v0.1 scope:
-- Membership lifecycle: member onboarding, plan assignment, subscription activation/extension/freeze/unfreeze/expiry.
-- Class booking: schedule-based booking, capacity control, cancellation, attendance confirmation.
-- PT session operations: package assignment, session usage tracking, remaining session visibility.
-- Attendance: QR check-in and manual check-in with daily totals.
-- Payment recording and confirmation: admin-recorded payment flow with proof attachment and status confirmation.
+- membership lifecycle: registration, subscription, extension, freeze/unfreeze, expiry.
+- class booking: schedule, capacity, booking, cancellation, attendance confirmation.
+- PT session: package, booking, completion, activity notes.
+- attendance: QR/manual checkin.
+- payment recording/confirmation + payment history.
+- CRM prospek ringan untuk sales pipeline operasional.
+- public account page untuk promosi kelas/program dan member conversion.
 
-## Why Event-Driven
+## Role-based Access
 
-Event-driven architecture is selected for operational reliability:
-- Auditability: every business change is an event with timestamp, actor, and references.
-- Scalability: write throughput is isolated in EventDB while projections scale read workload independently.
-- Simplicity in ops: staff workflows remain simple while system history stays complete and reconstructable.
-- Multi-tenant isolation: namespace + chain structure keeps tenant and branch streams clean.
+- admin: dashboard operasional + master data + payment confirmation + setup class/trainer.
+- sales: prospek CRM, follow-up, conversion tracking.
+- PT: catatan aktivitas member dan PT session log.
+- member: member portal untuk beli subscription dan self booking PT.
+
+## Why Event-driven
+
+- auditability: tiap aksi operasional disimpan sebagai event immutable.
+- scalability: write throughput terpisah dari read query workload.
+- operational clarity: peran berbeda membaca read model yang sama tapi dengan query berbeda.
+- deterministic replay: read model bisa di-rebuild dari event stream.
 
 ## Minimal Deployment Model (PWA-first)
 
-Foremoz Fitness deploys as a PWA-first product:
-- PWA frontend for staff operations and check-in workflows.
-- Gym API for command handling, validation, and event appends.
-- EventDB for immutable writes.
-- projector workers for projection checkpoints and read model updates.
-- Postgres read model schema for query-first screens.
+- Vite PWA frontend (public + internal).
+- Gym API (command endpoint + read endpoint).
+- EventDB (write layer).
+- projector worker (read model + checkpoint).
+- Postgres read model.
 
-This keeps deployment lightweight and production-ready for fitness centers with limited IT complexity while preserving a clean path to multi-branch growth.
+Model ini cukup ringan untuk single-branch, dan tetap siap untuk multi-branch via namespace + chain convention.

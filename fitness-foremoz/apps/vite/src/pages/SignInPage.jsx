@@ -3,9 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout.jsx';
 import { getSession, requireField, setSession } from '../lib.js';
 
+function roleHome(role, onboarded) {
+  if (role === 'sales') return '/sales';
+  if (role === 'pt') return '/pt';
+  if (role === 'member') return '/member/portal';
+  return onboarded ? '/dashboard' : '/onboarding';
+}
+
 export default function SignInPage() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm] = useState({ email: '', password: '', role: 'admin' });
   const [error, setError] = useState('');
 
   function handleChange(e) {
@@ -19,16 +26,21 @@ export default function SignInPage() {
       requireField(form.password, 'password');
 
       const current = getSession();
-      const user = current?.user || { fullName: 'Operator', email };
+      const role = form.role;
+      const user = { ...(current?.user || {}), fullName: current?.user?.fullName || 'Operator', email };
+      const isOnboarded = role === 'admin' ? Boolean(current?.isOnboarded) : true;
 
       setSession({
         ...(current || {}),
         isAuthenticated: true,
-        isOnboarded: Boolean(current?.isOnboarded),
-        user
+        isOnboarded,
+        role,
+        user,
+        tenant: current?.tenant || { id: 'tn_001', namespace: 'foremoz:fitness:tn_001', gym_name: 'Foremoz Demo Gym' },
+        branch: current?.branch || { id: 'br_jkt_01', chain: 'branch:br_jkt_01' }
       });
 
-      navigate(current?.isOnboarded ? '/dashboard' : '/onboarding', { replace: true });
+      navigate(roleHome(role, isOnboarded), { replace: true });
     } catch (err) {
       setError(err.message);
     }
@@ -37,11 +49,20 @@ export default function SignInPage() {
   return (
     <AuthLayout
       title="Sign in"
-      subtitle="Access your tenant namespace and branch operations."
+      subtitle="Login as admin, sales, PT, or member."
       alternateHref="/signup"
-      alternateText="Need account? Create one"
+      alternateText="Need admin account? Create one"
     >
       <form className="card form" onSubmit={submit}>
+        <label>
+          Role
+          <select name="role" value={form.role} onChange={handleChange}>
+            <option value="admin">admin</option>
+            <option value="sales">sales</option>
+            <option value="pt">pt</option>
+            <option value="member">member</option>
+          </select>
+        </label>
         <label>
           Email
           <input name="email" type="email" value={form.email} onChange={handleChange} />

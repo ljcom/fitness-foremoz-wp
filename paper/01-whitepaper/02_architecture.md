@@ -1,92 +1,95 @@
-# Foremoz Fitness Whitepaper v0.1 - Architecture
+# Foremoz Fitness Whitepaper v0.2 - Architecture
 
 ## Purpose
 
-Define the minimal production architecture for fitness center operations using EventDB as write layer and projection-driven read model queries.
+Menetapkan arsitektur runtime untuk public web + role-based operational app di atas EventDB.
 
 ## High-Level Architecture
 
 ```text
-[PWA Frontend]
-    |
-    v
+[Public Web]
+  /web
+  /a/<account>
+      |
+      v
+[Role-based PWA App]
+  admin | sales | pt | member
+      |
+      v
 [Gym API]
+  - auth + role guard
   - command validation
-  - idempotency checks
-  - append events
-    |
-    v
+  - append event
+  - read model query
+      |
+      v
 [EventDB]
   namespace: foremoz:fitness:<tenant_id>
   chain: branch:<branch_id> | core
-    |
-    v
+      |
+      v
 [Projector Workers]
-  - subscribe by namespace + chain
-  - process events in order
-  - upsert read model tables
-  - persist checkpoint
-    |
-    v
+  - ordered consume by namespace + chain
+  - update read models
+  - persist rm_checkpoint
+      |
+      v
 [Postgres Read Model]
   rm_member
   rm_subscription_active
-  rm_attendance_daily
+  rm_payment_queue
+  rm_sales_prospect
+  rm_pt_activity_log
   rm_class_availability
   rm_booking_list
-  rm_pt_balance
-  rm_payment_queue
 ```
 
-## Namespace and Chain Conventions
+## Namespace and Chain Convention
 
-- namespace format: `foremoz:fitness:<tenant_id>`
-- chain format:
-  - `branch:<branch_id>` for branch operations.
-  - `core` for tenant-wide or non-branch-specific events.
+- namespace: `foremoz:fitness:<tenant_id>`
+- chain:
+  - `branch:<branch_id>` untuk operasi branch.
+  - `core` untuk tenant-level/common stream.
 
-Rules:
-- API write path must always include namespace.
-- Branch-bound commands must resolve to a branch chain.
-- Read model rows include tenant and branch dimensions where relevant.
+## Core Components
 
-## Components
-
-- PWA frontend:
-  - staff-facing operations for member, booking, check-in, PT session, and payment confirmation.
+- Public web layer:
+  - global landing dan account public page.
+- PWA app layer:
+  - workspace per role (`admin`, `sales`, `pt`, `member`).
 - Gym API:
-  - validates command preconditions.
-  - appends immutable events to EventDB.
+  - command endpoint by domain.
+  - read endpoint by read model.
+  - role-based access control.
 - EventDB:
-  - write-optimized append-only event store.
-- Projector:
-  - event subscribers that materialize query-focused read model tables.
-- Read models:
-  - Postgres tables/views optimized for screen reads and operational reports.
+  - immutable write stream.
+- projector:
+  - projection handler idempotent.
+- read models:
+  - query-optimized operational tables.
 
 ## Projection Checkpoint Strategy
 
-Use `rm_checkpoint` per projector and stream partition.
+Table: `rm_checkpoint`
 
-Suggested structure:
-- `projector_name` (PK segment)
-- `namespace` (PK segment)
-- `chain` (PK segment)
+Primary key segments:
+- `projector_name`
+- `namespace`
+- `chain`
+
+Checkpoint fields:
 - `last_event_id`
 - `last_event_ts`
 - `updated_at`
 
-Execution rules:
-- Process events in order per namespace + chain.
-- Upsert read model rows in one transaction.
-- Commit checkpoint in the same transaction as read model updates.
-- On restart, continue from `last_event_id`.
+Rules:
+- process event berurutan per namespace+chain.
+- read model update dan checkpoint commit dalam satu transaksi.
+- worker restart melanjutkan dari checkpoint terakhir.
 
-## Booking Capacity Concurrency Notes
+## Concurrency Note
 
-Simple operational rule set:
-- Capacity decision is made against read model snapshot plus short revalidation.
-- API appends `class.booking.created` only when effective booked count < capacity.
-- Projector recomputes `rm_class_availability` from immutable booking events.
-- If two requests race, one may be rejected at append/revalidation stage.
-- No distributed lock is required in v0.1; keep deterministic conflict handling and clear staff feedback.
+Booking capacity rule:
+- command `class.booking.created` hanya valid bila slot tersedia.
+- projector menghitung ulang availability dari booking events.
+- race condition ditangani dengan deterministic rejection di command path.

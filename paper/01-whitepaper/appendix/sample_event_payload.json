@@ -1,53 +1,48 @@
 [
   {
-    "type": "subscription.activated",
+    "type": "sales.prospect.created",
     "actor": {
-      "kind": "staff",
-      "id": "stf_102"
+      "kind": "sales",
+      "id": "sales_001"
     },
     "subject": {
-      "kind": "subscription",
-      "id": "sub_90021"
+      "kind": "prospect",
+      "id": "lead_20011"
     },
     "data": {
       "tenant_id": "tn_001",
       "branch_id": "br_jkt_01",
-      "subscription_id": "sub_90021",
-      "member_id": "mem_4471",
-      "plan_id": "plan_monthly_unlimited",
-      "start_date": "2026-03-01",
-      "end_date": "2026-03-31",
-      "status": "active"
+      "prospect_id": "lead_20011",
+      "full_name": "Andi Saputra",
+      "phone": "081355550001",
+      "source": "instagram",
+      "stage": "new"
     },
-    "refs": {
-      "payment_id": "pay_33210"
-    },
-    "ts": "2026-03-01T03:22:10Z"
+    "refs": {},
+    "ts": "2026-03-03T08:10:00Z"
   },
   {
-    "type": "class.booking.created",
+    "type": "pt.activity.logged",
     "actor": {
-      "kind": "member",
-      "id": "mem_4471"
+      "kind": "pt",
+      "id": "tr_001"
     },
     "subject": {
-      "kind": "booking",
-      "id": "book_77811"
+      "kind": "pt_activity",
+      "id": "pta_90001"
     },
     "data": {
       "tenant_id": "tn_001",
       "branch_id": "br_jkt_01",
-      "booking_id": "book_77811",
-      "class_id": "class_hiit_20260302_1800",
-      "booking_kind": "member",
+      "activity_id": "pta_90001",
       "member_id": "mem_4471",
-      "guest_name": null,
-      "status": "booked",
-      "booked_at": "2026-03-02T08:10:45Z"
+      "trainer_id": "tr_001",
+      "note": "Mobility warmup + strength block",
+      "session_at": "2026-03-03T07:00:00Z"
     },
     "refs": {
-      "subscription_id": "sub_90021"
+      "pt_booking_id": "ptb_11122"
     },
-    "ts": "2026-03-02T08:10:45Z"
+    "ts": "2026-03-03T07:50:00Z"
   }
 ]

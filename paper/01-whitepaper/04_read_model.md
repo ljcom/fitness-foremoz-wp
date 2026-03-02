@@ -1,157 +1,87 @@
-# Foremoz Fitness Whitepaper v0.1 - Read Model
+# Foremoz Fitness Whitepaper v0.2 - Read Model
 
-## Purpose
+## Existing Core Read Models
 
-Define query-first read model tables required by operational screens. Write operations remain event-only in EventDB; projections maintain these tables.
+- `rm_member`
+- `rm_subscription_active`
+- `rm_attendance_daily`
+- `rm_class_availability`
+- `rm_booking_list`
+- `rm_pt_balance`
+- `rm_payment_queue`
+- `rm_dashboard`
 
-## Read Model Definitions
+## Additional Read Models for New Scope
 
-### rm_member
+### rm_public_account_profile
 
-- Primary key: `(tenant_id, member_id)`
+- PK: `(tenant_id, account_slug)`
+- Columns:
+  - `tenant_id`
+  - `account_slug`
+  - `display_name`
+  - `headline`
+  - `hero_image_url`
+  - `cta_signup_url`
+  - `cta_signin_url`
+  - `updated_at`
+- Query use:
+  - render `fitness.foremoz.com/a/<account>`.
+
+### rm_sales_prospect
+
+- PK: `(tenant_id, prospect_id)`
 - Columns:
   - `tenant_id`
   - `branch_id`
-  - `member_id`
+  - `prospect_id`
   - `full_name`
   - `phone`
-  - `status`
-  - `registered_at`
+  - `source`
+  - `stage`
+  - `owner_sales_id`
+  - `last_followup_at`
+  - `converted_member_id`
   - `updated_at`
-- Typical query use:
-  - Member list/search by branch.
-  - Member profile header.
+- Query use:
+  - sales pipeline view and conversion tracking.
 
-### rm_subscription_active
+### rm_pt_activity_log
 
-- Primary key: `(tenant_id, subscription_id)`
+- PK: `(tenant_id, activity_id)`
 - Columns:
   - `tenant_id`
   - `branch_id`
-  - `subscription_id`
-  - `member_id`
-  - `plan_id`
-  - `status`
-  - `start_date`
-  - `end_date`
-  - `freeze_until`
-  - `updated_at`
-- Typical query use:
-  - Active subscription check for check-in eligibility.
-  - Expiry monitoring.
-
-### rm_attendance_daily
-
-- Primary key: `(tenant_id, branch_id, attendance_date)`
-- Columns:
-  - `tenant_id`
-  - `branch_id`
-  - `attendance_date`
-  - `total_checkin`
-  - `unique_member_count`
-  - `updated_at`
-- Typical query use:
-  - Daily attendance dashboard card.
-  - Branch attendance trend.
-
-### rm_class_availability
-
-- Primary key: `(tenant_id, class_id)`
-- Columns:
-  - `tenant_id`
-  - `branch_id`
-  - `class_id`
-  - `class_name`
-  - `start_at`
-  - `end_at`
-  - `capacity`
-  - `booked_count`
-  - `available_slots`
-  - `updated_at`
-- Typical query use:
-  - Booking screen capacity indicator.
-  - Upcoming class availability.
-
-### rm_booking_list
-
-- Primary key: `(tenant_id, booking_id)`
-- Columns:
-  - `tenant_id`
-  - `branch_id`
-  - `booking_id`
-  - `class_id`
-  - `booking_kind`
-  - `member_id`
-  - `guest_name`
-  - `status`
-  - `booked_at`
-  - `canceled_at`
-  - `attendance_confirmed_at`
-  - `updated_at`
-- Typical query use:
-  - Class roster view.
-  - Booking audit trail for operations desk.
-
-### rm_pt_balance
-
-- Primary key: `(tenant_id, pt_package_id)`
-- Columns:
-  - `tenant_id`
-  - `branch_id`
-  - `pt_package_id`
+  - `activity_id`
   - `member_id`
   - `trainer_id`
-  - `total_sessions`
-  - `consumed_sessions`
-  - `remaining_sessions`
-  - `last_session_at`
+  - `note`
+  - `session_at`
   - `updated_at`
-- Typical query use:
-  - PT balance panel in member detail.
-  - PT session consumption report.
+- Query use:
+  - PT workspace activity feed.
+  - member detail PT history.
 
-### rm_payment_queue
+### rm_member_self_booking
 
-- Primary key: `(tenant_id, payment_id)`
+- PK: `(tenant_id, booking_id)`
 - Columns:
   - `tenant_id`
-  - `branch_id`
-  - `payment_id`
   - `member_id`
-  - `subscription_id`
-  - `amount`
-  - `currency`
-  - `method`
-  - `proof_url`
-  - `status` (`pending`, `confirmed`, `rejected`)
-  - `recorded_at`
-  - `reviewed_at`
-  - `reviewed_by`
+  - `booking_id`
+  - `booking_type` (`pt`|`class`)
+  - `target_id`
+  - `status`
+  - `booked_at`
   - `updated_at`
-- Typical query use:
-  - Payment confirmation queue.
-  - Daily payment status recap.
+- Query use:
+  - member portal booking history and upcoming schedule.
 
-### rm_dashboard (optional)
+## Projection and Query Notes
 
-- Primary key: `(tenant_id, branch_id, dashboard_date)`
-- Columns:
-  - `tenant_id`
-  - `branch_id`
-  - `dashboard_date`
-  - `active_subscription_count`
-  - `today_checkin_count`
-  - `today_booking_count`
-  - `pending_payment_count`
-  - `updated_at`
-- Typical query use:
-  - Fast daily overview without joining multiple tables.
+- projector subscribe by namespace + chain.
+- all handlers idempotent untuk replay safety.
+- `rm_checkpoint` wajib dipakai untuk resume position.
+- read model mengoptimalkan query layar role-based, bukan write source of truth.
 
-## Projection Execution Notes
-
-- projector subscribes per namespace + chain.
-- Each event updates one or more read model tables.
-- `rm_checkpoint` persists last processed event offset.
-- Projection handlers must be idempotent for replay safety.
-
-See `appendix/sample_read_model.sql` for a minimal Postgres schema.
+Referensi SQL contoh: `appendix/sample_read_model.sql`.

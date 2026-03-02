@@ -1,4 +1,4 @@
--- Foremoz Fitness v0.1 sample read model schema (Postgres)
+-- Foremoz Fitness v0.2 sample read model schema (Postgres)
 
 CREATE TABLE IF NOT EXISTS rm_checkpoint (
   projector_name TEXT NOT NULL,
@@ -36,14 +36,22 @@ CREATE TABLE IF NOT EXISTS rm_subscription_active (
   PRIMARY KEY (tenant_id, subscription_id)
 );
 
-CREATE TABLE IF NOT EXISTS rm_attendance_daily (
+CREATE TABLE IF NOT EXISTS rm_payment_queue (
   tenant_id TEXT NOT NULL,
-  branch_id TEXT NOT NULL,
-  attendance_date DATE NOT NULL,
-  total_checkin INTEGER NOT NULL DEFAULT 0,
-  unique_member_count INTEGER NOT NULL DEFAULT 0,
+  branch_id TEXT,
+  payment_id TEXT NOT NULL,
+  member_id TEXT NOT NULL,
+  subscription_id TEXT,
+  amount NUMERIC(14,2) NOT NULL,
+  currency TEXT NOT NULL,
+  method TEXT NOT NULL,
+  proof_url TEXT,
+  status TEXT NOT NULL,
+  recorded_at TIMESTAMPTZ NOT NULL,
+  reviewed_at TIMESTAMPTZ,
+  reviewed_by TEXT,
   updated_at TIMESTAMPTZ NOT NULL,
-  PRIMARY KEY (tenant_id, branch_id, attendance_date)
+  PRIMARY KEY (tenant_id, payment_id)
 );
 
 CREATE TABLE IF NOT EXISTS rm_class_availability (
@@ -90,41 +98,62 @@ CREATE TABLE IF NOT EXISTS rm_pt_balance (
   PRIMARY KEY (tenant_id, pt_package_id)
 );
 
-CREATE TABLE IF NOT EXISTS rm_payment_queue (
+CREATE TABLE IF NOT EXISTS rm_public_account_profile (
+  tenant_id TEXT NOT NULL,
+  account_slug TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  headline TEXT,
+  hero_image_url TEXT,
+  cta_signup_url TEXT,
+  cta_signin_url TEXT,
+  updated_at TIMESTAMPTZ NOT NULL,
+  PRIMARY KEY (tenant_id, account_slug)
+);
+
+CREATE TABLE IF NOT EXISTS rm_sales_prospect (
   tenant_id TEXT NOT NULL,
   branch_id TEXT,
-  payment_id TEXT NOT NULL,
-  member_id TEXT NOT NULL,
-  subscription_id TEXT,
-  amount NUMERIC(14,2) NOT NULL,
-  currency TEXT NOT NULL,
-  method TEXT NOT NULL,
-  proof_url TEXT,
-  status TEXT NOT NULL,
-  recorded_at TIMESTAMPTZ NOT NULL,
-  reviewed_at TIMESTAMPTZ,
-  reviewed_by TEXT,
+  prospect_id TEXT NOT NULL,
+  full_name TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  source TEXT NOT NULL,
+  stage TEXT NOT NULL,
+  owner_sales_id TEXT,
+  last_followup_at TIMESTAMPTZ,
+  converted_member_id TEXT,
   updated_at TIMESTAMPTZ NOT NULL,
-  PRIMARY KEY (tenant_id, payment_id)
+  PRIMARY KEY (tenant_id, prospect_id)
 );
 
-CREATE TABLE IF NOT EXISTS rm_dashboard (
+CREATE TABLE IF NOT EXISTS rm_pt_activity_log (
   tenant_id TEXT NOT NULL,
-  branch_id TEXT NOT NULL,
-  dashboard_date DATE NOT NULL,
-  active_subscription_count INTEGER NOT NULL DEFAULT 0,
-  today_checkin_count INTEGER NOT NULL DEFAULT 0,
-  today_booking_count INTEGER NOT NULL DEFAULT 0,
-  pending_payment_count INTEGER NOT NULL DEFAULT 0,
+  branch_id TEXT,
+  activity_id TEXT NOT NULL,
+  member_id TEXT NOT NULL,
+  trainer_id TEXT,
+  note TEXT,
+  session_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL,
-  PRIMARY KEY (tenant_id, branch_id, dashboard_date)
+  PRIMARY KEY (tenant_id, activity_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_rm_subscription_active_member
-  ON rm_subscription_active (tenant_id, member_id, status, end_date);
+CREATE TABLE IF NOT EXISTS rm_member_self_booking (
+  tenant_id TEXT NOT NULL,
+  member_id TEXT NOT NULL,
+  booking_id TEXT NOT NULL,
+  booking_type TEXT NOT NULL,
+  target_id TEXT NOT NULL,
+  status TEXT NOT NULL,
+  booked_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL,
+  PRIMARY KEY (tenant_id, booking_id)
+);
 
-CREATE INDEX IF NOT EXISTS idx_rm_booking_list_class
-  ON rm_booking_list (tenant_id, class_id, status, booked_at);
+CREATE INDEX IF NOT EXISTS idx_rm_sales_prospect_stage
+  ON rm_sales_prospect (tenant_id, stage, updated_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_rm_payment_queue_status
-  ON rm_payment_queue (tenant_id, status, recorded_at);
+CREATE INDEX IF NOT EXISTS idx_rm_pt_activity_member
+  ON rm_pt_activity_log (tenant_id, member_id, session_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_rm_member_self_booking_member
+  ON rm_member_self_booking (tenant_id, member_id, status, booked_at DESC);

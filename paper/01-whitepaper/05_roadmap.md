@@ -1,38 +1,28 @@
-# Foremoz Fitness Whitepaper v0.1 - Roadmap
+# Foremoz Fitness Whitepaper v0.2 - Roadmap
 
-## Phase 1 - Core Ops Baseline
+## Phase 1 - Public + Core Admin Ops
 
-Scope:
-- membership lifecycle.
-- check-in (QR + manual).
-- manual payment recording + confirmation queue.
-- basic operational dashboard.
+- `/web` global landing.
+- `/a/<account>` public account page.
+- admin signup/signin/onboarding.
+- membership + checkin + manual payment + dashboard.
 
-Output:
-- Stable event types for member/subscription/payment/checkin.
-- Core read model tables and projector checkpoints in production.
-- PWA workflows usable by front desk and admin.
+## Phase 2 - Role Workspace Expansion
 
-## Phase 2 - Booking Expansion
+- sales workspace untuk prospek CRM pipeline.
+- PT workspace untuk activity logging.
+- admin workspace untuk class/trainer/sales/user management.
+- payment history di member detail.
 
-Scope:
-- class scheduling and class booking.
-- guest booking flow.
-- reminder pipeline (lightweight notification integration).
+## Phase 3 - Member Self-service
 
-Output:
-- Capacity-safe booking operations.
-- Availability and booking list read models.
-- Improved attendance linkage between booking and class sessions.
+- member signup/signin.
+- member buy subscription flow.
+- member self booking PT.
+- integration hardening (payment/notification).
 
-## Phase 3 - PT + Multi-Branch + Integrations
+## Phase 4 - Multi-branch Maturity
 
-Scope:
-- PT package and PT session tracking.
-- multi-branch operational visibility under one tenant.
-- integration hooks (payment channel sync and notification providers).
-
-Output:
-- PT balance tracking and PT session completion flow.
-- Branch-aware dashboard and reporting projections.
-- Controlled external integrations without expanding to ERP scope.
+- branch-level access guard.
+- branch performance dashboard.
+- projection partition tuning per namespace/chain.

@@ -1,60 +1,56 @@
-# Foremoz Fitness Whitepaper v0.1 - Scope
+# Foremoz Fitness Whitepaper v0.2 - Scope
 
-This section is aligned with `paper/00-admin/PROJECT_SCOPE.md` and duplicated here so the whitepaper package stands alone.
+Bagian ini mereferensikan `paper/00-admin/PROJECT_SCOPE.md`, dengan penyesuaian produk terbaru agar whitepaper tetap berdiri sendiri.
 
 ## Objective
 
-Foremoz Fitness is a vertical SaaS for fitness center operations (gym + PT + class booking + membership + attendance + payment recording/confirmation). It is not a marketplace and not a full ERP system.
+Foremoz Fitness berfokus pada operasi fitness center end-to-end:
+- gym operations
+- membership
+- booking
+- PT session
+- attendance
+- payment recording/confirmation
+- public account page conversion
+- CRM prospek ringan untuk sales
 
 ## In Scope
 
-- Membership lifecycle:
-  - Member registration.
-  - Plan assignment.
-  - Subscription purchase, extension, freeze, unfreeze, expiry handling.
-- Attendance management:
-  - QR check-in.
-  - Manual check-in.
-  - Daily attendance logging and reporting.
-- Class booking:
-  - Class schedule.
-  - Capacity management.
-  - Member booking.
-  - Guest booking.
-  - Booking cancellation.
-  - Attendance confirmation per class.
-- PT session operations:
-  - PT package definition.
-  - Trainer assignment.
-  - PT session usage tracking.
-  - Remaining PT session balance.
-- Payment recording and confirmation:
-  - Manual payment recording.
-  - Proof upload.
-  - Admin confirmation.
-  - Operational revenue visibility.
+- membership lifecycle.
+- class booking + capacity.
+- PT session package, booking, completion, activity logging.
+- attendance logging (QR/manual).
+- payment queue + confirmation + payment history.
+- role workspaces:
+  - admin
+  - sales
+  - PT
+  - member
+- public web surfaces:
+  - global landing (`/web`)
+  - account public page (`/a/<account>`)
+- member self-service:
+  - join as member
+  - buy subscription
+  - self booking PT
+- CRM prospek operasional untuk sales:
+  - prospect create/update/follow-up/conversion.
 
 ## Multi-tenant and Branch Model
 
 - namespace: `foremoz:fitness:<tenant_id>`
-- chain: `branch:<branch_id>` or `core`
+- chain: `branch:<branch_id>` atau `core`
 
-Each tenant is isolated by namespace. Branch-specific operations are separated by chain.
+Tenant tetap terisolasi oleh namespace. Operasi branch terpisah by chain.
 
-## Deployment and Architecture Boundaries
+## Out of Scope (Tetap Ketat)
 
-- PWA-first frontend.
-- EventDB write layer.
-- projection-based read model.
-- No direct mutation-only domain storage.
+- heavy ERP module.
+- payroll.
+- inventory/warehouse.
+- marketplace aggregator.
+- deep accounting.
+- advanced marketing automation.
 
-## Strict Out of Scope
-
-- Heavy ERP modules.
-- Payroll.
-- Inventory/warehouse.
-- Marketplace/discovery.
-- CRM automation.
-- Deep accounting logic.
-
-If requirements move into broad cross-industry customization, they belong outside Foremoz Fitness vertical scope.
+Catatan:
+- CRM di scope hanya CRM prospek operasional (pipeline ringan), bukan automation suite kompleks.

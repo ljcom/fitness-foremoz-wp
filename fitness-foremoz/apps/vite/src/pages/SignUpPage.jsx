@@ -19,15 +19,15 @@ export default function SignUpPage() {
       const email = requireField(form.email, 'email');
       requireField(form.password, 'password');
 
-      const session = {
+      setSession({
         isAuthenticated: true,
         isOnboarded: false,
+        role: 'admin',
         user: { fullName, email },
         tenant: null,
         branch: null
-      };
+      });
 
-      setSession(session);
       navigate('/onboarding', { replace: true });
     } catch (err) {
       setError(err.message);
@@ -36,8 +36,8 @@ export default function SignUpPage() {
 
   return (
     <AuthLayout
-      title="Create account"
-      subtitle="Setup your tenant workspace for gym and studio operations."
+      title="Create admin account"
+      subtitle="Setup tenant workspace and branch operations."
       alternateHref="/signin"
       alternateText="Already have account? Sign in"
     >
