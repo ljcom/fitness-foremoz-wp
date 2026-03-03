@@ -22,6 +22,10 @@ export default function AdminPage() {
   const navigate = useNavigate();
   const session = getSession();
   const [activeTab, setActiveTab] = useState('user');
+  const [userMode, setUserMode] = useState('list');
+  const [classMode, setClassMode] = useState('list');
+  const [trainerMode, setTrainerMode] = useState('list');
+  const [salesMode, setSalesMode] = useState('list');
   const [feedback, setFeedback] = useState('');
 
   const [userForm, setUserForm] = useState({ full_name: '', email: '', role: 'staff' });
@@ -52,6 +56,7 @@ export default function AdminPage() {
     setUsers((prev) => [{ ...userForm, user_id: `usr_${Date.now()}` }, ...prev]);
     setFeedback(`user.created: ${userForm.full_name}`);
     setUserForm({ full_name: '', email: '', role: 'staff' });
+    setUserMode('list');
   }
 
   function addClass(e) {
@@ -60,6 +65,7 @@ export default function AdminPage() {
     setClasses((prev) => [{ ...classForm, class_id: `class_${Date.now()}` }, ...prev]);
     setFeedback(`class.scheduled: ${classForm.class_name}`);
     setClassForm({ class_name: '', trainer_name: '', capacity: '20', start_at: '' });
+    setClassMode('list');
   }
 
   function addTrainer(e) {
@@ -68,6 +74,7 @@ export default function AdminPage() {
     setTrainers((prev) => [{ ...trainerForm, trainer_id: `tr_${Date.now()}` }, ...prev]);
     setFeedback(`trainer.created: ${trainerForm.trainer_name}`);
     setTrainerForm({ trainer_name: '', phone: '', specialization: '' });
+    setTrainerMode('list');
   }
 
   function addSales(e) {
@@ -76,6 +83,7 @@ export default function AdminPage() {
     setSales((prev) => [{ ...salesForm, sales_id: `sales_${Date.now()}` }, ...prev]);
     setFeedback(`sales.target.set: ${salesForm.sales_name}`);
     setSalesForm({ sales_name: '', channel: 'walkin', target_amount: '' });
+    setSalesMode('list');
   }
 
   function extendSaas(e) {
@@ -108,7 +116,21 @@ export default function AdminPage() {
             <button
               key={tab.id}
               className={`side-item ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                setActiveTab(tab.id);
+                if (tab.id === 'class') {
+                  setClassMode('list');
+                }
+                if (tab.id === 'user') {
+                  setUserMode('list');
+                }
+                if (tab.id === 'trainer') {
+                  setTrainerMode('list');
+                }
+                if (tab.id === 'sales') {
+                  setSalesMode('list');
+                }
+              }}
             >
               {tab.label}
             </button>
@@ -119,97 +141,169 @@ export default function AdminPage() {
           {activeTab === 'user' ? (
             <>
               <p className="eyebrow">User</p>
-              <h2>User list, add, delete</h2>
-              <div className="entity-list">
-                {users.map((item) => (
-                  <div className="entity-row" key={item.user_id}>
-                    <div>
-                      <strong>{item.full_name}</strong>
-                      <p>{item.email} - {item.role}</p>
-                    </div>
-                    <DeleteButton onClick={() => setUsers((prev) => prev.filter((v) => v.user_id !== item.user_id))} />
+              {userMode === 'list' ? (
+                <>
+                  <div className="panel-head">
+                    <h2>User list, delete</h2>
+                    <button className="btn" type="button" onClick={() => setUserMode('add')}>
+                      Add New
+                    </button>
                   </div>
-                ))}
-              </div>
-              <form className="form" onSubmit={addUser}>
-                <label>full_name<input value={userForm.full_name} onChange={(e) => setUserForm((p) => ({ ...p, full_name: e.target.value }))} /></label>
-                <label>email<input type="email" value={userForm.email} onChange={(e) => setUserForm((p) => ({ ...p, email: e.target.value }))} /></label>
-                <label>role<select value={userForm.role} onChange={(e) => setUserForm((p) => ({ ...p, role: e.target.value }))}><option value="staff">staff</option><option value="manager">manager</option><option value="admin">admin</option></select></label>
-                <button className="btn" type="submit">Add user</button>
-              </form>
+                  <div className="entity-list">
+                    {users.map((item) => (
+                      <div className="entity-row" key={item.user_id}>
+                        <div>
+                          <strong>{item.full_name}</strong>
+                          <p>{item.email} - {item.role}</p>
+                        </div>
+                        <DeleteButton onClick={() => setUsers((prev) => prev.filter((v) => v.user_id !== item.user_id))} />
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="panel-head">
+                    <h2>Add user</h2>
+                    <button className="btn ghost" type="button" onClick={() => setUserMode('list')}>
+                      Back to list
+                    </button>
+                  </div>
+                  <form className="form" onSubmit={addUser}>
+                    <label>full_name<input value={userForm.full_name} onChange={(e) => setUserForm((p) => ({ ...p, full_name: e.target.value }))} /></label>
+                    <label>email<input type="email" value={userForm.email} onChange={(e) => setUserForm((p) => ({ ...p, email: e.target.value }))} /></label>
+                    <label>role<select value={userForm.role} onChange={(e) => setUserForm((p) => ({ ...p, role: e.target.value }))}><option value="staff">staff</option><option value="manager">manager</option><option value="admin">admin</option></select></label>
+                    <button className="btn" type="submit">Save user</button>
+                  </form>
+                </>
+              )}
             </>
           ) : null}
 
           {activeTab === 'class' ? (
             <>
               <p className="eyebrow">Class</p>
-              <h2>Class list, add, delete</h2>
-              <div className="entity-list">
-                {classes.map((item) => (
-                  <div className="entity-row" key={item.class_id}>
-                    <div>
-                      <strong>{item.class_name}</strong>
-                      <p>{item.trainer_name} - cap {item.capacity} - {item.start_at}</p>
-                    </div>
-                    <DeleteButton onClick={() => setClasses((prev) => prev.filter((v) => v.class_id !== item.class_id))} />
+              {classMode === 'list' ? (
+                <>
+                  <div className="panel-head">
+                    <h2>Class list, delete</h2>
+                    <button className="btn" type="button" onClick={() => setClassMode('add')}>
+                      Add New
+                    </button>
                   </div>
-                ))}
-              </div>
-              <form className="form" onSubmit={addClass}>
-                <label>class_name<input value={classForm.class_name} onChange={(e) => setClassForm((p) => ({ ...p, class_name: e.target.value }))} /></label>
-                <label>trainer_name<input value={classForm.trainer_name} onChange={(e) => setClassForm((p) => ({ ...p, trainer_name: e.target.value }))} /></label>
-                <label>capacity<input type="number" min="1" value={classForm.capacity} onChange={(e) => setClassForm((p) => ({ ...p, capacity: e.target.value }))} /></label>
-                <label>start_at<input type="datetime-local" value={classForm.start_at} onChange={(e) => setClassForm((p) => ({ ...p, start_at: e.target.value }))} /></label>
-                <button className="btn" type="submit">Add class</button>
-              </form>
+                  <div className="entity-list">
+                    {classes.map((item) => (
+                      <div className="entity-row" key={item.class_id}>
+                        <div>
+                          <strong>{item.class_name}</strong>
+                          <p>{item.trainer_name} - cap {item.capacity} - {item.start_at}</p>
+                        </div>
+                        <DeleteButton onClick={() => setClasses((prev) => prev.filter((v) => v.class_id !== item.class_id))} />
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="panel-head">
+                    <h2>Add class</h2>
+                    <button className="btn ghost" type="button" onClick={() => setClassMode('list')}>
+                      Back to list
+                    </button>
+                  </div>
+                  <form className="form" onSubmit={addClass}>
+                    <label>class_name<input value={classForm.class_name} onChange={(e) => setClassForm((p) => ({ ...p, class_name: e.target.value }))} /></label>
+                    <label>trainer_name<input value={classForm.trainer_name} onChange={(e) => setClassForm((p) => ({ ...p, trainer_name: e.target.value }))} /></label>
+                    <label>capacity<input type="number" min="1" value={classForm.capacity} onChange={(e) => setClassForm((p) => ({ ...p, capacity: e.target.value }))} /></label>
+                    <label>start_at<input type="datetime-local" value={classForm.start_at} onChange={(e) => setClassForm((p) => ({ ...p, start_at: e.target.value }))} /></label>
+                    <button className="btn" type="submit">Save class</button>
+                  </form>
+                </>
+              )}
             </>
           ) : null}
 
           {activeTab === 'trainer' ? (
             <>
               <p className="eyebrow">Trainer</p>
-              <h2>Trainer list, add, delete</h2>
-              <div className="entity-list">
-                {trainers.map((item) => (
-                  <div className="entity-row" key={item.trainer_id}>
-                    <div>
-                      <strong>{item.trainer_name}</strong>
-                      <p>{item.phone} - {item.specialization || '-'}</p>
-                    </div>
-                    <DeleteButton onClick={() => setTrainers((prev) => prev.filter((v) => v.trainer_id !== item.trainer_id))} />
+              {trainerMode === 'list' ? (
+                <>
+                  <div className="panel-head">
+                    <h2>Trainer list, delete</h2>
+                    <button className="btn" type="button" onClick={() => setTrainerMode('add')}>
+                      Add New
+                    </button>
                   </div>
-                ))}
-              </div>
-              <form className="form" onSubmit={addTrainer}>
-                <label>trainer_name<input value={trainerForm.trainer_name} onChange={(e) => setTrainerForm((p) => ({ ...p, trainer_name: e.target.value }))} /></label>
-                <label>phone<input value={trainerForm.phone} onChange={(e) => setTrainerForm((p) => ({ ...p, phone: e.target.value }))} /></label>
-                <label>specialization<input value={trainerForm.specialization} onChange={(e) => setTrainerForm((p) => ({ ...p, specialization: e.target.value }))} /></label>
-                <button className="btn" type="submit">Add trainer</button>
-              </form>
+                  <div className="entity-list">
+                    {trainers.map((item) => (
+                      <div className="entity-row" key={item.trainer_id}>
+                        <div>
+                          <strong>{item.trainer_name}</strong>
+                          <p>{item.phone} - {item.specialization || '-'}</p>
+                        </div>
+                        <DeleteButton onClick={() => setTrainers((prev) => prev.filter((v) => v.trainer_id !== item.trainer_id))} />
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="panel-head">
+                    <h2>Add trainer</h2>
+                    <button className="btn ghost" type="button" onClick={() => setTrainerMode('list')}>
+                      Back to list
+                    </button>
+                  </div>
+                  <form className="form" onSubmit={addTrainer}>
+                    <label>trainer_name<input value={trainerForm.trainer_name} onChange={(e) => setTrainerForm((p) => ({ ...p, trainer_name: e.target.value }))} /></label>
+                    <label>phone<input value={trainerForm.phone} onChange={(e) => setTrainerForm((p) => ({ ...p, phone: e.target.value }))} /></label>
+                    <label>specialization<input value={trainerForm.specialization} onChange={(e) => setTrainerForm((p) => ({ ...p, specialization: e.target.value }))} /></label>
+                    <button className="btn" type="submit">Save trainer</button>
+                  </form>
+                </>
+              )}
             </>
           ) : null}
 
           {activeTab === 'sales' ? (
             <>
               <p className="eyebrow">Sales</p>
-              <h2>Sales list, add, delete</h2>
-              <div className="entity-list">
-                {sales.map((item) => (
-                  <div className="entity-row" key={item.sales_id}>
-                    <div>
-                      <strong>{item.sales_name}</strong>
-                      <p>{item.channel} - target {item.target_amount}</p>
-                    </div>
-                    <DeleteButton onClick={() => setSales((prev) => prev.filter((v) => v.sales_id !== item.sales_id))} />
+              {salesMode === 'list' ? (
+                <>
+                  <div className="panel-head">
+                    <h2>Sales list, delete</h2>
+                    <button className="btn" type="button" onClick={() => setSalesMode('add')}>
+                      Add New
+                    </button>
                   </div>
-                ))}
-              </div>
-              <form className="form" onSubmit={addSales}>
-                <label>sales_name<input value={salesForm.sales_name} onChange={(e) => setSalesForm((p) => ({ ...p, sales_name: e.target.value }))} /></label>
-                <label>channel<select value={salesForm.channel} onChange={(e) => setSalesForm((p) => ({ ...p, channel: e.target.value }))}><option value="walkin">walkin</option><option value="instagram">instagram</option><option value="whatsapp">whatsapp</option><option value="referral">referral</option></select></label>
-                <label>target_amount<input type="number" min="0" value={salesForm.target_amount} onChange={(e) => setSalesForm((p) => ({ ...p, target_amount: e.target.value }))} /></label>
-                <button className="btn" type="submit">Add sales</button>
-              </form>
+                  <div className="entity-list">
+                    {sales.map((item) => (
+                      <div className="entity-row" key={item.sales_id}>
+                        <div>
+                          <strong>{item.sales_name}</strong>
+                          <p>{item.channel} - target {item.target_amount}</p>
+                        </div>
+                        <DeleteButton onClick={() => setSales((prev) => prev.filter((v) => v.sales_id !== item.sales_id))} />
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="panel-head">
+                    <h2>Add sales</h2>
+                    <button className="btn ghost" type="button" onClick={() => setSalesMode('list')}>
+                      Back to list
+                    </button>
+                  </div>
+                  <form className="form" onSubmit={addSales}>
+                    <label>sales_name<input value={salesForm.sales_name} onChange={(e) => setSalesForm((p) => ({ ...p, sales_name: e.target.value }))} /></label>
+                    <label>channel<select value={salesForm.channel} onChange={(e) => setSalesForm((p) => ({ ...p, channel: e.target.value }))}><option value="walkin">walkin</option><option value="instagram">instagram</option><option value="whatsapp">whatsapp</option><option value="referral">referral</option></select></label>
+                    <label>target_amount<input type="number" min="0" value={salesForm.target_amount} onChange={(e) => setSalesForm((p) => ({ ...p, target_amount: e.target.value }))} /></label>
+                    <button className="btn" type="submit">Save sales</button>
+                  </form>
+                </>
+              )}
             </>
           ) : null}
 
