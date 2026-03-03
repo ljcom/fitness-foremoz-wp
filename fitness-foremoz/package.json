@@ -3,14 +3,15 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "web:mockup": "npm --prefix ./apps/vite run dev",
-    "web": "npm --prefix ./apps/vite run dev",
-    "mockup": "npm --prefix ./apps/vite run dev",
+    "dev": "sh -c 'if [ \"$1\" = \"mockup\" ]; then npm run web:mockup; else npm run full; fi' --",
+    "web:mockup": "VITE_APP_MODE=mock VITE_MOCKUP_OPEN_ACCESS=true npm --prefix ./apps/vite run dev",
+    "web": "VITE_APP_MODE=full VITE_MOCKUP_OPEN_ACCESS=false npm --prefix ./apps/vite run dev",
+    "mockup": "npm run web:mockup",
     "backend:setup": "npm --prefix ./apps/eventdb run db:schema && npm --prefix ./apps/api run db:read-model",
     "backend:eventdb": "npm --prefix ./apps/eventdb run dev",
     "backend:api": "npm --prefix ./apps/api run dev",
     "setup:backend": "npm --prefix ./apps/eventdb run db:schema && npm --prefix ./apps/api run db:read-model",
-    "full": "sh -c 'npm --prefix ./apps/eventdb run dev & EVENTDB_PID=$!; npm --prefix ./apps/api run dev & API_PID=$!; npm --prefix ./apps/vite run dev; kill $EVENTDB_PID $API_PID 2>/dev/null || true'",
-    "fullstack": "sh -c 'npm --prefix ./apps/eventdb run dev & EVENTDB_PID=$!; npm --prefix ./apps/api run dev & API_PID=$!; npm --prefix ./apps/vite run dev; kill $EVENTDB_PID $API_PID 2>/dev/null || true'"
+    "full": "sh -c 'npm --prefix ./apps/eventdb run dev & EVENTDB_PID=$!; npm --prefix ./apps/api run dev & API_PID=$!; VITE_APP_MODE=full VITE_MOCKUP_OPEN_ACCESS=false npm --prefix ./apps/vite run dev; kill $EVENTDB_PID $API_PID 2>/dev/null || true'",
+    "fullstack": "npm run full"
   }
 }
