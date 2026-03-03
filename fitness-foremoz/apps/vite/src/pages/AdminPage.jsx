@@ -3,11 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { accountPath, getSession } from '../lib.js';
 
 const ADMIN_TABS = [
-  { id: 'user', label: 'User' },
+  // { id: 'user', label: 'User' },
   { id: 'class', label: 'Class' },
   { id: 'trainer', label: 'Trainer' },
   { id: 'sales', label: 'Sales' },
-  { id: 'saas', label: 'SaaS' }
+  // { id: 'saas', label: 'SaaS' }
 ];
 
 function DeleteButton({ onClick }) {
@@ -29,7 +29,7 @@ function ViewButton({ onClick }) {
 export default function AdminPage() {
   const navigate = useNavigate();
   const session = getSession();
-  const [activeTab, setActiveTab] = useState('user');
+  const [activeTab, setActiveTab] = useState('class');
   const [userMode, setUserMode] = useState('list');
   const [classMode, setClassMode] = useState('list');
   const [trainerMode, setTrainerMode] = useState('list');
