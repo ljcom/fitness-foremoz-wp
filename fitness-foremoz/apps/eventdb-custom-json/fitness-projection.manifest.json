@@ -1,0 +1,25 @@
+{
+  "projector_name": "fitness_v1",
+  "namespace_format": "foremoz:fitness:<tenant_id>",
+  "chain_format": "branch:<branch_id>|core",
+  "event_types": {
+    "member.registered": ["read.rm_member"],
+    "member.updated": ["read.rm_member"],
+    "subscription.activated": ["read.rm_subscription_active", "read.rm_dashboard"],
+    "subscription.extended": ["read.rm_subscription_active", "read.rm_dashboard"],
+    "subscription.frozen": ["read.rm_subscription_active", "read.rm_dashboard"],
+    "subscription.unfrozen": ["read.rm_subscription_active", "read.rm_dashboard"],
+    "subscription.expired": ["read.rm_subscription_active", "read.rm_dashboard"],
+    "payment.recorded": ["read.rm_payment_queue", "read.rm_dashboard"],
+    "payment.confirmed": ["read.rm_payment_queue", "read.rm_dashboard"],
+    "payment.rejected": ["read.rm_payment_queue", "read.rm_dashboard"],
+    "checkin.logged": ["read.rm_attendance_daily", "read.rm_dashboard"],
+    "class.scheduled": ["read.rm_class_availability"],
+    "class.booking.created": ["read.rm_booking_list", "read.rm_class_availability", "read.rm_dashboard"],
+    "class.booking.canceled": ["read.rm_booking_list", "read.rm_class_availability", "read.rm_dashboard"],
+    "class.attendance.confirmed": ["read.rm_booking_list"],
+    "pt.package.assigned": ["read.rm_pt_balance"],
+    "pt.session.booked": ["read.rm_pt_balance"],
+    "pt.session.completed": ["read.rm_pt_balance"]
+  }
+}
