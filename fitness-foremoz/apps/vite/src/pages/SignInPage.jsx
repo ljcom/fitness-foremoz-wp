@@ -5,9 +5,9 @@ import { accountPath, getAccountSlug, getOwnerSetup, getSession, requireField, s
 
 function roleHome(session, role, onboarded) {
   if (role === 'gov') return '/gov';
-  if (role === 'sales') return accountPath(session, '/sales');
-  if (role === 'pt') return accountPath(session, '/dashboard/pt');
-  return onboarded ? accountPath(session, '/dashboard') : '/onboarding';
+  if (role === 'sales') return accountPath(session, '/sales/dashboard');
+  if (role === 'pt') return accountPath(session, '/pt/dashboard');
+  return onboarded ? accountPath(session, '/admin/dashboard') : '/onboarding';
 }
 
 export default function SignInPage() {

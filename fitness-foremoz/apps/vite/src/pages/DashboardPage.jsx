@@ -61,7 +61,7 @@ export default function DashboardPage() {
           <button className="btn ghost" onClick={() => navigate(`/a/${accountSlug}`)}>
             Jump to account landing page
           </button>
-          <button className="btn ghost" onClick={() => navigate(accountPath(session, '/admin'))}>
+          <button className="btn ghost" onClick={() => navigate(accountPath(session, '/admin/settings'))}>
             Admin
           </button>
           <button className="btn ghost" onClick={signOut}>

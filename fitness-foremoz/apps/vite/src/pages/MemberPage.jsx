@@ -25,7 +25,7 @@ export default function MemberPage() {
   const [feedback, setFeedback] = useState('');
 
   if (!member) {
-    return <Navigate to={accountPath(session, '/dashboard')} replace />;
+    return <Navigate to={accountPath(session, '/admin/dashboard')} replace />;
   }
 
   const namespace = session?.tenant?.namespace || '-';
@@ -63,7 +63,7 @@ export default function MemberPage() {
         <div className="meta">
           <code>namespace: {namespace}</code>
           <code>chain: {chain}</code>
-          <button className="btn ghost" onClick={() => navigate(accountPath(session, '/dashboard'))}>
+          <button className="btn ghost" onClick={() => navigate(accountPath(session, '/admin/dashboard'))}>
             Back to dashboard
           </button>
         </div>
@@ -181,7 +181,7 @@ export default function MemberPage() {
       </section>
 
       <footer className="dash-foot">
-        <Link to={accountPath(session, '/dashboard')}>Back to search</Link>
+        <Link to={accountPath(session, '/admin/dashboard')}>Back to search</Link>
       </footer>
     </main>
   );

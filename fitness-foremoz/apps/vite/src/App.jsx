@@ -18,10 +18,10 @@ import { accountPath, getSession } from './lib.js';
 function roleHome(session) {
   const role = session?.role || 'admin';
   if (role === 'gov') return '/gov';
-  if (role === 'sales') return accountPath(session, '/sales');
-  if (role === 'pt') return accountPath(session, '/dashboard/pt');
+  if (role === 'sales') return accountPath(session, '/sales/dashboard');
+  if (role === 'pt') return accountPath(session, '/pt/dashboard');
   if (role === 'member') return accountPath(session, '/member/portal');
-  return accountPath(session, '/dashboard');
+  return accountPath(session, '/admin/dashboard');
 }
 
 function ProtectedRoute({ children }) {
@@ -66,12 +66,27 @@ function OnboardingOnly() {
 
 function LegacyAdminRedirect() {
   const { account } = useParams();
-  return <Navigate to={`/a/${account}/admin`} replace />;
+  return <Navigate to={`/a/${account}/admin/settings`} replace />;
+}
+
+function LegacyAdminSettingsRedirect() {
+  const { account } = useParams();
+  return <Navigate to={`/a/${account}/admin/settings`} replace />;
+}
+
+function LegacyDashboardRedirect() {
+  const { account } = useParams();
+  return <Navigate to={`/a/${account}/admin/dashboard`} replace />;
 }
 
 function LegacySalesRedirect() {
   const { account } = useParams();
-  return <Navigate to={`/a/${account}/sales`} replace />;
+  return <Navigate to={`/a/${account}/sales/dashboard`} replace />;
+}
+
+function LegacyPtRedirect() {
+  const { account } = useParams();
+  return <Navigate to={`/a/${account}/pt/dashboard`} replace />;
 }
 
 export default function App() {
@@ -100,7 +115,7 @@ export default function App() {
       <Route path="/onboarding" element={<OnboardingOnly />} />
 
       <Route
-        path="/a/:account/dashboard"
+        path="/a/:account/admin/dashboard"
         element={
           <ProtectedRoute>
             <RoleRoute roles={['admin']}>
@@ -112,7 +127,11 @@ export default function App() {
         }
       />
       <Route
-        path="/a/:account/admin"
+        path="/a/:account/dashboard"
+        element={<LegacyDashboardRedirect />}
+      />
+      <Route
+        path="/a/:account/admin/settings"
         element={
           <ProtectedRoute>
             <RoleRoute roles={['admin']}>
@@ -123,6 +142,7 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/a/:account/admin" element={<LegacyAdminSettingsRedirect />} />
       <Route path="/a/:account/dashboard/admin" element={<LegacyAdminRedirect />} />
       <Route
         path="/a/:account/members/:memberId"
@@ -137,7 +157,7 @@ export default function App() {
         }
       />
       <Route
-        path="/a/:account/sales"
+        path="/a/:account/sales/dashboard"
         element={
           <ProtectedRoute>
             <RoleRoute roles={['sales']}>
@@ -146,9 +166,10 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/a/:account/sales" element={<LegacySalesRedirect />} />
       <Route path="/a/:account/dashboard/sales" element={<LegacySalesRedirect />} />
       <Route
-        path="/a/:account/dashboard/pt"
+        path="/a/:account/pt/dashboard"
         element={
           <ProtectedRoute>
             <RoleRoute roles={['pt']}>
@@ -157,6 +178,7 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/a/:account/dashboard/pt" element={<LegacyPtRedirect />} />
       <Route
         path="/a/:account/member"
         element={
@@ -180,10 +202,10 @@ export default function App() {
       <Route path="/member/portal" element={<Navigate to={accountPath(getSession(), '/member/portal')} replace />} />
 
       <Route path="/dashboard" element={<Navigate to={roleHome(getSession())} replace />} />
-      <Route path="/dashboard/admin" element={<Navigate to={accountPath(getSession(), '/admin')} replace />} />
-      <Route path="/members/:memberId" element={<Navigate to={accountPath(getSession(), '/dashboard')} replace />} />
-      <Route path="/sales" element={<Navigate to={accountPath(getSession(), '/sales')} replace />} />
-      <Route path="/pt" element={<Navigate to={accountPath(getSession(), '/dashboard/pt')} replace />} />
+      <Route path="/dashboard/admin" element={<Navigate to={accountPath(getSession(), '/admin/settings')} replace />} />
+      <Route path="/members/:memberId" element={<Navigate to={accountPath(getSession(), '/admin/dashboard')} replace />} />
+      <Route path="/sales" element={<Navigate to={accountPath(getSession(), '/sales/dashboard')} replace />} />
+      <Route path="/pt" element={<Navigate to={accountPath(getSession(), '/pt/dashboard')} replace />} />
 
       <Route path="*" element={<Navigate to="/web" replace />} />
     </Routes>

@@ -41,7 +41,7 @@ export default function OnboardingPage() {
         }
       });
 
-      navigate(accountPath({ tenant: { account_slug: tenant_id } }, '/dashboard'), { replace: true });
+      navigate(accountPath({ tenant: { account_slug: tenant_id } }, '/admin/dashboard'), { replace: true });
     } catch (err) {
       setError(err.message);
     }
