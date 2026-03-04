@@ -43,7 +43,7 @@ export default function AdminPage() {
   const [classForm, setClassForm] = useState({ class_name: '', trainer_name: '', capacity: '20', start_at: '' });
   const [trainerForm, setTrainerForm] = useState({ trainer_name: '', phone: '', specialization: '' });
   const [salesForm, setSalesForm] = useState({ sales_name: '', channel: 'walkin', target_amount: '' });
-  const [memberForm, setMemberForm] = useState({ member_name: '', phone: '', membership_plan: 'monthly' });
+  const [memberForm, setMemberForm] = useState({ member_name: '', phone: '', email: '' });
   const [saasForm, setSaasForm] = useState({ months: '1', note: '' });
 
   const [users, setUsers] = useState([
@@ -59,7 +59,7 @@ export default function AdminPage() {
     { sales_id: 'sales_001', sales_name: 'Nina', channel: 'instagram', target_amount: '20000000' }
   ]);
   const [members, setMembers] = useState([
-    { member_id: 'member_001', member_name: 'Doni', phone: '081200001111', membership_plan: 'monthly' }
+    { member_id: 'member_001', member_name: 'Doni', phone: '081200001111', email: 'doni@foremoz.com' }
   ]);
 
   const namespace = session?.tenant?.namespace || '-';
@@ -147,7 +147,7 @@ export default function AdminPage() {
     if (!memberForm.member_name || !memberForm.phone) return;
     setMembers((prev) => [{ ...memberForm, member_id: `member_${Date.now()}` }, ...prev]);
     setFeedback(`member.created: ${memberForm.member_name}`);
-    setMemberForm({ member_name: '', phone: '', membership_plan: 'monthly' });
+    setMemberForm({ member_name: '', phone: '', email: '' });
     setMemberMode('list');
   }
 
@@ -155,7 +155,7 @@ export default function AdminPage() {
     setMemberForm({
       member_name: item.member_name || '',
       phone: item.phone || '',
-      membership_plan: item.membership_plan || 'monthly'
+      email: item.email || ''
     });
     setMemberMode('add');
   }
@@ -431,18 +431,31 @@ export default function AdminPage() {
                     </div>
                   </div>
                   <div className="entity-list">
-                    {filteredMembers.map((item) => (
-                      <div className="entity-row" key={item.member_id}>
-                        <div>
-                          <strong>{item.member_name}</strong>
-                          <p>{item.phone} - {item.membership_plan}</p>
-                        </div>
-                        <div className="row-actions">
-                          <ViewButton onClick={() => viewMember(item)} />
-                          <DeleteButton onClick={() => setMembers((prev) => prev.filter((v) => v.member_id !== item.member_id))} />
-                        </div>
-                      </div>
-                    ))}
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr>
+                          <th style={{ textAlign: 'left', padding: '0.65rem 0.5rem', borderBottom: '1px solid #d1d5db', background: '#f7efe6', fontWeight: 700 }}>Nama Member</th>
+                          <th style={{ textAlign: 'left', padding: '0.65rem 0.5rem', borderBottom: '1px solid #d1d5db', background: '#f7efe6', fontWeight: 700 }}>No. HP</th>
+                          <th style={{ textAlign: 'left', padding: '0.65rem 0.5rem', borderBottom: '1px solid #d1d5db', background: '#f7efe6', fontWeight: 700 }}>Email Aktif</th>
+                          <th style={{ textAlign: 'left', padding: '0.65rem 0.5rem', borderBottom: '1px solid #d1d5db', background: '#f7efe6', fontWeight: 700 }}>Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredMembers.map((item, idx) => (
+                          <tr key={item.member_id} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f7efe6' }}>
+                            <td style={{ padding: '0.5rem', borderBottom: '1px solid #e5e7eb' }}>{item.member_name}</td>
+                            <td style={{ padding: '0.5rem', borderBottom: '1px solid #e5e7eb' }}>{item.phone}</td>
+                            <td style={{ padding: '0.5rem', borderBottom: '1px solid #e5e7eb' }}>{item.email || '-'}</td>
+                            <td style={{ padding: '0.5rem', borderBottom: '1px solid #e5e7eb' }}>
+                              <div className="row-actions">
+                                <ViewButton onClick={() => viewMember(item)} />
+                                <DeleteButton onClick={() => setMembers((prev) => prev.filter((v) => v.member_id !== item.member_id))} />
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </>
               ) : (
@@ -456,7 +469,7 @@ export default function AdminPage() {
                   <form className="form" onSubmit={addMember}>
                     <label>member_name<input value={memberForm.member_name} onChange={(e) => setMemberForm((p) => ({ ...p, member_name: e.target.value }))} /></label>
                     <label>phone<input value={memberForm.phone} onChange={(e) => setMemberForm((p) => ({ ...p, phone: e.target.value }))} /></label>
-                    <label>Email<input value={memberForm.email} onChange={(e) => setMemberForm((p) => ({ ...p, email: e.target.value }))} /></label>
+                    <label>email<input type="email" value={memberForm.email} onChange={(e) => setMemberForm((p) => ({ ...p, email: e.target.value }))} /></label>
                     <button className="btn" type="submit">Save member</button>
                   </form>
                 </>
