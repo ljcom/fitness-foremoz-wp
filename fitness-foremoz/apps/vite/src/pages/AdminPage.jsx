@@ -7,6 +7,7 @@ const ADMIN_TABS = [
   { id: 'class', label: 'Class' },
   { id: 'trainer', label: 'Trainer' },
   { id: 'sales', label: 'Sales' },
+  { id: 'member', label: 'Member' },
   // { id: 'saas', label: 'SaaS' }
 ];
 
@@ -34,12 +35,14 @@ export default function AdminPage() {
   const [classMode, setClassMode] = useState('list');
   const [trainerMode, setTrainerMode] = useState('list');
   const [salesMode, setSalesMode] = useState('list');
+  const [memberMode, setMemberMode] = useState('list');
   const [feedback, setFeedback] = useState('');
 
   const [userForm, setUserForm] = useState({ full_name: '', email: '', role: 'staff' });
   const [classForm, setClassForm] = useState({ class_name: '', trainer_name: '', capacity: '20', start_at: '' });
   const [trainerForm, setTrainerForm] = useState({ trainer_name: '', phone: '', specialization: '' });
   const [salesForm, setSalesForm] = useState({ sales_name: '', channel: 'walkin', target_amount: '' });
+  const [memberForm, setMemberForm] = useState({ member_name: '', phone: '', membership_plan: 'monthly' });
   const [saasForm, setSaasForm] = useState({ months: '1', note: '' });
 
   const [users, setUsers] = useState([
@@ -53,6 +56,9 @@ export default function AdminPage() {
   ]);
   const [sales, setSales] = useState([
     { sales_id: 'sales_001', sales_name: 'Nina', channel: 'instagram', target_amount: '20000000' }
+  ]);
+  const [members, setMembers] = useState([
+    { member_id: 'member_001', member_name: 'Doni', phone: '081200001111', membership_plan: 'monthly' }
   ]);
 
   const namespace = session?.tenant?.namespace || '-';
@@ -132,6 +138,24 @@ export default function AdminPage() {
     setSalesMode('add');
   }
 
+  function addMember(e) {
+    e.preventDefault();
+    if (!memberForm.member_name || !memberForm.phone) return;
+    setMembers((prev) => [{ ...memberForm, member_id: `member_${Date.now()}` }, ...prev]);
+    setFeedback(`member.created: ${memberForm.member_name}`);
+    setMemberForm({ member_name: '', phone: '', membership_plan: 'monthly' });
+    setMemberMode('list');
+  }
+
+  function viewMember(item) {
+    setMemberForm({
+      member_name: item.member_name || '',
+      phone: item.phone || '',
+      membership_plan: item.membership_plan || 'monthly'
+    });
+    setMemberMode('add');
+  }
+
   function extendSaas(e) {
     e.preventDefault();
     setFeedback(`saas.extended: +${saasForm.months} month(s)`);
@@ -175,6 +199,9 @@ export default function AdminPage() {
                 }
                 if (tab.id === 'sales') {
                   setSalesMode('list');
+                }
+                if (tab.id === 'member') {
+                  setMemberMode('list');
                 }
               }}
             >
@@ -374,6 +401,51 @@ export default function AdminPage() {
                     <label>channel<select value={salesForm.channel} onChange={(e) => setSalesForm((p) => ({ ...p, channel: e.target.value }))}><option value="walkin">walkin</option><option value="instagram">instagram</option><option value="whatsapp">whatsapp</option><option value="referral">referral</option></select></label>
                     <label>target_amount<input type="number" min="0" value={salesForm.target_amount} onChange={(e) => setSalesForm((p) => ({ ...p, target_amount: e.target.value }))} /></label>
                     <button className="btn" type="submit">Save sales</button>
+                  </form>
+                </>
+              )}
+            </>
+          ) : null}
+
+          {activeTab === 'member' ? (
+            <>
+              <p className="eyebrow">Member</p>
+              {memberMode === 'list' ? (
+                <>
+                  <div className="panel-head">
+                    <h2>Member list, delete</h2>
+                    <button className="btn" type="button" onClick={() => setMemberMode('add')}>
+                      Add New
+                    </button>
+                  </div>
+                  <div className="entity-list">
+                    {members.map((item) => (
+                      <div className="entity-row" key={item.member_id}>
+                        <div>
+                          <strong>{item.member_name}</strong>
+                          <p>{item.phone} - {item.membership_plan}</p>
+                        </div>
+                        <div className="row-actions">
+                          <ViewButton onClick={() => viewMember(item)} />
+                          <DeleteButton onClick={() => setMembers((prev) => prev.filter((v) => v.member_id !== item.member_id))} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="panel-head">
+                    <h2>Add member</h2>
+                    <button className="btn ghost" type="button" onClick={() => setMemberMode('list')}>
+                      Back to list
+                    </button>
+                  </div>
+                  <form className="form" onSubmit={addMember}>
+                    <label>member_name<input value={memberForm.member_name} onChange={(e) => setMemberForm((p) => ({ ...p, member_name: e.target.value }))} /></label>
+                    <label>phone<input value={memberForm.phone} onChange={(e) => setMemberForm((p) => ({ ...p, phone: e.target.value }))} /></label>
+                    <label>Email<input value={memberForm.email} onChange={(e) => setMemberForm((p) => ({ ...p, email: e.target.value }))} /></label>
+                    <button className="btn" type="submit">Save member</button>
                   </form>
                 </>
               )}
