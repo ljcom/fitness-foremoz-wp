@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { clearSession, getSession, setSession } from '../lib.js';
 
@@ -19,6 +19,14 @@ export default function MemberPortalPage() {
     confirmPassword: ''
   });
   const [photoName, setPhotoName] = useState(session?.user?.photoName || '');
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState('');
+
+  useEffect(
+    () => () => {
+      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+    },
+    [photoPreviewUrl]
+  );
 
   return (
     <main className="dashboard">
@@ -206,9 +214,26 @@ export default function MemberPortalPage() {
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => setPhotoName(e.target.files?.[0]?.name || '')}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+                      if (!file) {
+                        setPhotoName('');
+                        setPhotoPreviewUrl('');
+                        return;
+                      }
+                      setPhotoName(file.name);
+                      setPhotoPreviewUrl(URL.createObjectURL(file));
+                    }}
                   />
                 </label>
+                <div className="photo-preview-box">
+                  {photoPreviewUrl ? (
+                    <img src={photoPreviewUrl} alt="Preview foto member" className="photo-preview-image" />
+                  ) : (
+                    <p className="mini-note">Preview foto akan tampil di sini</p>
+                  )}
+                </div>
                 <p className="mini-note">{photoName ? `Selected: ${photoName}` : 'No file selected'}</p>
                 <button className="btn" type="submit">Upload foto</button>
               </form>
