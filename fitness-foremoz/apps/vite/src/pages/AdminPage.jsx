@@ -37,6 +37,7 @@ export default function AdminPage() {
   const [salesMode, setSalesMode] = useState('list');
   const [memberMode, setMemberMode] = useState('list');
   const [feedback, setFeedback] = useState('');
+  const [memberQuery, setMemberQuery] = useState('');
 
   const [userForm, setUserForm] = useState({ full_name: '', email: '', role: 'staff' });
   const [classForm, setClassForm] = useState({ class_name: '', trainer_name: '', capacity: '20', start_at: '' });
@@ -63,6 +64,9 @@ export default function AdminPage() {
 
   const namespace = session?.tenant?.namespace || '-';
   const chain = session?.branch?.chain || 'core';
+  const filteredMembers = members.filter((item) =>
+    item.member_name.toLowerCase().includes(memberQuery.toLowerCase())
+  );
 
   function addUser(e) {
     e.preventDefault();
@@ -414,12 +418,20 @@ export default function AdminPage() {
                 <>
                   <div className="panel-head">
                     <h2>Member list, delete</h2>
-                    <button className="btn" type="button" onClick={() => setMemberMode('add')}>
-                      Add New
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <input
+                        type="text"
+                        placeholder="Cari member..."
+                        value={memberQuery}
+                        onChange={(e) => setMemberQuery(e.target.value)}
+                      />
+                      <button className="btn" type="button" onClick={() => setMemberMode('add')}>
+                        Add New
+                      </button>
+                    </div>
                   </div>
                   <div className="entity-list">
-                    {members.map((item) => (
+                    {filteredMembers.map((item) => (
                       <div className="entity-row" key={item.member_id}>
                         <div>
                           <strong>{item.member_name}</strong>
