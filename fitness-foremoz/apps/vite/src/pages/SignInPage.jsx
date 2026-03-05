@@ -35,8 +35,16 @@ export default function SignInPage() {
 
       if (!OPEN_MOCKUP_ACCESS) {
         const setup = getOwnerSetup();
+        let accountSetup = null;
+        if (isAccountSignin && account) {
+          const resolved = await apiJson(`/v1/public/account/resolve?account_slug=${encodeURIComponent(account)}`);
+          accountSetup = resolved.row || null;
+          if (!accountSetup?.tenant_id) {
+            throw new Error(`Account "${account}" tidak ditemukan atau belum aktif.`);
+          }
+        }
         const requestedTenantId = isAccountSignin
-          ? (account || setup?.tenant_id || getSession()?.tenant?.id || 'tn_001')
+          ? (accountSetup?.tenant_id || setup?.tenant_id || getSession()?.tenant?.id || 'tn_001')
           : null;
         const result = await apiJson('/v1/tenant/auth/signin', {
           method: 'POST',
@@ -87,13 +95,13 @@ export default function SignInPage() {
           },
           tenant: {
             id: signedTenantId,
-            account_slug: activeSetup?.account_slug || account || signedTenantId,
+            account_slug: activeSetup?.account_slug || accountSetup?.account_slug || account || signedTenantId,
             namespace: `foremoz:fitness:${signedTenantId}`,
-            gym_name: activeSetup?.gym_name || 'Foremoz Demo Gym'
+            gym_name: activeSetup?.gym_name || accountSetup?.gym_name || 'Foremoz Demo Gym'
           },
           branch: {
-            id: activeSetup?.branch_id || 'br_jkt_01',
-            chain: `branch:${activeSetup?.branch_id || 'br_jkt_01'}`
+            id: activeSetup?.branch_id || accountSetup?.branch_id || 'br_jkt_01',
+            chain: `branch:${activeSetup?.branch_id || accountSetup?.branch_id || 'br_jkt_01'}`
           },
           auth: {
             tokenType: result.auth?.token_type || 'Bearer',
@@ -112,6 +120,10 @@ export default function SignInPage() {
         }
         if (signedRole === 'pt') {
           navigate(`/a/${nextSession.tenant.account_slug}/pt/dashboard`, { replace: true });
+          return;
+        }
+        if (signedRole === 'cs') {
+          navigate(`/a/${nextSession.tenant.account_slug}/cs/dashboard`, { replace: true });
           return;
         }
         navigate(`/a/${nextSession.tenant.account_slug}/admin/dashboard`, { replace: true });
@@ -144,7 +156,7 @@ export default function SignInPage() {
       };
 
       setSession(nextSession);
-      navigate(isAccountSignin ? `/a/${nextSession.tenant.account_slug}/admin/dashboard` : '/web/owner', { replace: true });
+      navigate(isAccountSignin ? `/a/${nextSession.tenant.account_slug}/cs/dashboard` : '/web/owner', { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -160,8 +172,8 @@ export default function SignInPage() {
           ? 'Sign in as tenant user (admin, CS, sales, PT).'
           : 'Sign in as owner to manage tenant setup and access.'
       }
-      alternateHref="/signup"
-      alternateText={isAccountSignin ? 'Need owner account? Create one' : 'Need owner account? Create one'}
+      alternateHref={isAccountSignin ? '' : '/signup'}
+      alternateText={isAccountSignin ? '' : 'Need owner account? Create one'}
     >
       <form className="card form" onSubmit={submit}>
         {OPEN_MOCKUP_ACCESS ? <p className="error">Mock mode aktif: signin ini tidak memverifikasi akun ke backend.</p> : null}

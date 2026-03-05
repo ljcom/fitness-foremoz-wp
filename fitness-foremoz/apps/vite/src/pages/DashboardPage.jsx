@@ -146,6 +146,10 @@ export default function DashboardPage() {
 
   function goToEnv(env) {
     if (!allowedEnv.includes(env)) return;
+    if (env === 'admin') {
+      navigate(`/a/${accountSlug}/admin/dashboard`);
+      return;
+    }
     if (env === 'sales') {
       navigate(`/a/${accountSlug}/sales/dashboard`);
       return;
@@ -155,10 +159,10 @@ export default function DashboardPage() {
       return;
     }
     if (env === 'cs') {
-      navigate(`/a/${accountSlug}/admin/dashboard`);
+      navigate(`/a/${accountSlug}/cs/dashboard`);
       return;
     }
-    navigate(`/a/${accountSlug}/admin/dashboard`);
+    navigate(`/a/${accountSlug}/cs/dashboard`);
   }
 
   function scanQrCode() {

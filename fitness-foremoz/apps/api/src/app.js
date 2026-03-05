@@ -267,6 +267,27 @@ app.get('/v1/owner/setup', async (req, res, next) => {
   }
 });
 
+app.get('/v1/public/account/resolve', async (req, res, next) => {
+  try {
+    const accountSlug = String(req.query.account_slug || '').trim().toLowerCase();
+    if (!accountSlug) {
+      throw fail(400, 'ACCOUNT_SLUG_REQUIRED', 'account_slug is required');
+    }
+
+    const { rows } = await query(
+      `select tenant_id, gym_name, branch_id, account_slug, package_plan, status, updated_at
+       from read.rm_owner_setup
+       where lower(account_slug) = $1 and status = 'active'
+       order by updated_at desc
+       limit 1`,
+      [accountSlug]
+    );
+    return ok(res, { row: rows[0] || null });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 app.post('/v1/owner/setup/save', async (req, res, next) => {
   try {
     const data = req.body || {};

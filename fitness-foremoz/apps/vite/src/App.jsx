@@ -24,7 +24,7 @@ function roleHome(session) {
   if (role === 'gov') return '/gov';
   if (role === 'sales') return accountPath(session, '/sales/dashboard');
   if (role === 'pt') return accountPath(session, '/pt/dashboard');
-  if (role === 'cs') return accountPath(session, '/admin/dashboard');
+  if (role === 'cs') return accountPath(session, '/cs/dashboard');
   if (role === 'member') return accountPath(session, '/member/portal');
   return accountPath(session, '/admin/dashboard');
 }
@@ -87,17 +87,22 @@ function OnboardingOnly() {
 
 function LegacyAdminRedirect() {
   const { account } = useParams();
-  return <Navigate to={`/a/${account}/admin/settings`} replace />;
+  return <Navigate to={`/a/${account}/admin/dashboard`} replace />;
 }
 
 function LegacyAdminSettingsRedirect() {
   const { account } = useParams();
-  return <Navigate to={`/a/${account}/admin/settings`} replace />;
+  return <Navigate to={`/a/${account}/admin/dashboard`} replace />;
 }
 
 function LegacyDashboardRedirect() {
   const { account } = useParams();
-  return <Navigate to={`/a/${account}/admin/dashboard`} replace />;
+  return <Navigate to={`/a/${account}/cs/dashboard`} replace />;
+}
+
+function LegacyCsRedirect() {
+  const { account } = useParams();
+  return <Navigate to={`/a/${account}/cs/dashboard`} replace />;
 }
 
 function LegacySalesRedirect() {
@@ -137,7 +142,7 @@ export default function App() {
       <Route path="/onboarding" element={<OnboardingOnly />} />
 
       <Route
-        path="/a/:account/admin/dashboard"
+        path="/a/:account/cs/dashboard"
         element={
           <ProtectedRoute>
             <RoleRoute roles={['admin', 'owner', 'cs']}>
@@ -153,10 +158,10 @@ export default function App() {
         element={<LegacyDashboardRedirect />}
       />
       <Route
-        path="/a/:account/admin/settings"
+        path="/a/:account/admin/dashboard"
         element={
           <ProtectedRoute>
-            <RoleRoute roles={['admin', 'owner', 'cs']}>
+            <RoleRoute roles={['admin', 'owner']}>
               <RequireAdminOnboarding>
                 <AdminPage />
               </RequireAdminOnboarding>
@@ -164,7 +169,10 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/a/:account/admin/settings" element={<LegacyAdminRedirect />} />
       <Route path="/a/:account/admin" element={<LegacyAdminSettingsRedirect />} />
+      <Route path="/a/:account/cs" element={<LegacyCsRedirect />} />
+      <Route path="/a/:account/dashboard/cs" element={<LegacyCsRedirect />} />
       <Route path="/a/:account/dashboard/admin" element={<LegacyAdminRedirect />} />
       <Route
         path="/a/:account/members/:memberId"
@@ -182,7 +190,7 @@ export default function App() {
         path="/a/:account/sales/dashboard"
         element={
           <ProtectedRoute>
-            <RoleRoute roles={['sales']}>
+            <RoleRoute roles={['sales', 'admin', 'owner']}>
               <SalesPage />
             </RoleRoute>
           </ProtectedRoute>
@@ -192,7 +200,7 @@ export default function App() {
         path="/a/:account/sales/prospects/new"
         element={
           <ProtectedRoute>
-            <RoleRoute roles={['sales']}>
+            <RoleRoute roles={['sales', 'admin', 'owner']}>
               <SalesProspectNewPage />
             </RoleRoute>
           </ProtectedRoute>
@@ -202,7 +210,7 @@ export default function App() {
         path="/a/:account/sales/prospects/:prospectId/edit"
         element={
           <ProtectedRoute>
-            <RoleRoute roles={['sales']}>
+            <RoleRoute roles={['sales', 'admin', 'owner']}>
               <SalesProspectEditPage />
             </RoleRoute>
           </ProtectedRoute>
@@ -214,7 +222,7 @@ export default function App() {
         path="/a/:account/pt/dashboard"
         element={
           <ProtectedRoute>
-            <RoleRoute roles={['pt']}>
+            <RoleRoute roles={['pt', 'admin', 'owner']}>
               <PtPage />
             </RoleRoute>
           </ProtectedRoute>
@@ -244,8 +252,8 @@ export default function App() {
       <Route path="/member/portal" element={<Navigate to={accountPath(getSession(), '/member/portal')} replace />} />
 
       <Route path="/dashboard" element={<Navigate to={roleHome(getSession())} replace />} />
-      <Route path="/dashboard/admin" element={<Navigate to={accountPath(getSession(), '/admin/settings')} replace />} />
-      <Route path="/members/:memberId" element={<Navigate to={accountPath(getSession(), '/admin/dashboard')} replace />} />
+      <Route path="/dashboard/admin" element={<Navigate to={accountPath(getSession(), '/admin/dashboard')} replace />} />
+      <Route path="/members/:memberId" element={<Navigate to={accountPath(getSession(), '/cs/dashboard')} replace />} />
       <Route path="/sales" element={<Navigate to={accountPath(getSession(), '/sales/dashboard')} replace />} />
       <Route path="/pt" element={<Navigate to={accountPath(getSession(), '/pt/dashboard')} replace />} />
 

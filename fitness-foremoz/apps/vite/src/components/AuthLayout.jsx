@@ -7,9 +7,11 @@ export default function AuthLayout({ title, subtitle, alternateHref, alternateTe
         <p className="eyebrow">Foremoz Fitness</p>
         <h1>{title}</h1>
         <p>{subtitle}</p>
-        <Link className="link-inline" to={alternateHref}>
-          {alternateText}
-        </Link>
+        {alternateHref && alternateText ? (
+          <Link className="link-inline" to={alternateHref}>
+            {alternateText}
+          </Link>
+        ) : null}
       </section>
       <section className="auth-right">{children}</section>
     </main>
