@@ -245,8 +245,8 @@ export default function AdminPage() {
         <div className="meta">
           <code>namespace: {namespace}</code>
           <code>chain: {chain}</code>
-          <button className="btn ghost" onClick={() => navigate(accountPath(session, '/admin/dashboard'))}>
-            Back to dashboard
+          <button className="btn ghost" onClick={() => navigate(accountPath(session, '/cs/dashboard'))}>
+            Back to CS dashboard
           </button>
         </div>
       </header>
@@ -717,7 +717,7 @@ export default function AdminPage() {
       </section>
 
       <footer className="dash-foot">
-        <Link to={accountPath(session, '/admin/dashboard')}>Back to search member</Link>
+        <Link to={accountPath(session, '/cs/dashboard')}>Back to search member</Link>
       </footer>
     </main>
   );
