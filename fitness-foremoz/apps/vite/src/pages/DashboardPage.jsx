@@ -33,9 +33,7 @@ export default function DashboardPage() {
   const accountSlug = getAccountSlug(session);
   const role = String(session?.role || 'admin').toLowerCase();
   const fullName = session?.user?.fullName || session?.user?.full_name || 'User';
-  const [targetEnv, setTargetEnv] = useState(
-    role === 'sales' ? 'sales' : role === 'pt' ? 'pt' : role === 'cs' ? 'cs' : 'admin'
-  );
+  const [targetEnv, setTargetEnv] = useState('cs');
 
   const allowedEnv = useMemo(() => {
     if (role === 'owner' || role === 'admin') return ['admin', 'cs', 'pt', 'sales'];

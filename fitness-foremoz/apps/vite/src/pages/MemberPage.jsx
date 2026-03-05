@@ -28,8 +28,6 @@ export default function MemberPage() {
     return <Navigate to={accountPath(session, '/cs/dashboard')} replace />;
   }
 
-  const namespace = session?.tenant?.namespace || '-';
-  const chain = session?.branch?.chain || 'core';
   const paymentHistory = PAYMENT_HISTORY[member.member_id] || [];
 
   function actionMessage(action) {
@@ -61,8 +59,6 @@ export default function MemberPage() {
           <p>{member.member_id}</p>
         </div>
         <div className="meta">
-          <code>namespace: {namespace}</code>
-          <code>chain: {chain}</code>
           <button className="btn ghost" onClick={() => navigate(accountPath(session, '/cs/dashboard'))}>
             Back to dashboard
           </button>

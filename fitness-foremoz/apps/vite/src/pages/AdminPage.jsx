@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { accountPath, getSession } from '../lib.js';
+import { accountPath, getAccountSlug, getSession } from '../lib.js';
 
 const ADMIN_TABS = [
   // { id: 'user', label: 'User' },
   { id: 'class', label: 'Class' },
+  { id: 'product', label: 'Product' },
+  { id: 'package_creation', label: 'Package creation' },
   { id: 'trainer', label: 'Trainer' },
   { id: 'sales', label: 'Sales' },
   { id: 'member', label: 'Member' },
@@ -51,9 +53,14 @@ function ViewButton({ onClick }) {
 export default function AdminPage() {
   const navigate = useNavigate();
   const session = getSession();
+  const role = String(session?.role || 'admin').toLowerCase();
+  const accountSlug = getAccountSlug(session);
+  const [targetEnv, setTargetEnv] = useState('admin');
   const [activeTab, setActiveTab] = useState('class');
   const [userMode, setUserMode] = useState('list');
   const [classMode, setClassMode] = useState('list');
+  const [productMode, setProductMode] = useState('list');
+  const [packageMode, setPackageMode] = useState('list');
   const [trainerMode, setTrainerMode] = useState('list');
   const [salesMode, setSalesMode] = useState('list');
   const [memberMode, setMemberMode] = useState('list');
@@ -61,6 +68,8 @@ export default function AdminPage() {
   const [feedback, setFeedback] = useState('');
   const [classQuery, setClassQuery] = useState('');
   const [trainerQuery, setTrainerQuery] = useState('');
+  const [productQuery, setProductQuery] = useState('');
+  const [packageQuery, setPackageQuery] = useState('');
   const [salesQuery, setSalesQuery] = useState('');
   const [memberQuery, setMemberQuery] = useState('');
   const [transactionQuery, setTransactionQuery] = useState('');
@@ -68,6 +77,8 @@ export default function AdminPage() {
   const [userForm, setUserForm] = useState({ full_name: '', email: '', role: 'staff' });
   const [classForm, setClassForm] = useState({ class_name: '', trainer_name: '', capacity: '20', start_at: '' });
   const [trainerForm, setTrainerForm] = useState({ trainer_name: '', phone: '', specialization: '' });
+  const [productForm, setProductForm] = useState({ product_name: '', category: 'retail', price: '', stock: '' });
+  const [packageForm, setPackageForm] = useState({ package_name: '', package_type: 'membership', duration_months: '1', price: '' });
   const [salesForm, setSalesForm] = useState({ sales_name: '', channel: 'walkin', target_amount: '' });
   const [memberForm, setMemberForm] = useState({ member_name: '', phone: '', email: '' });
   const [transactionForm, setTransactionForm] = useState({ no_transaction: '', product: '', qty: '1', price: '' });
@@ -82,6 +93,12 @@ export default function AdminPage() {
   const [trainers, setTrainers] = useState([
     { trainer_id: 'tr_001', trainer_name: 'Raka', phone: '081234555500', specialization: 'HIIT' }
   ]);
+  const [products, setProducts] = useState([
+    { product_id: 'prd_001', product_name: 'Whey Protein 1kg', category: 'retail', price: '450000', stock: '12' }
+  ]);
+  const [packages, setPackages] = useState([
+    { package_id: 'pkg_001', package_name: 'Membership 1 Month', package_type: 'membership', duration_months: '1', price: '350000' }
+  ]);
   const [sales, setSales] = useState([
     { sales_id: 'sales_001', sales_name: 'Nina', channel: 'instagram', target_amount: '20000000' }
   ]);
@@ -92,8 +109,31 @@ export default function AdminPage() {
     { transaction_id: 'trx_001', no_transaction: 'TRX-001', product: 'Monthly Membership', qty: '1', price: '350000' }
   ]);
 
-  const namespace = session?.tenant?.namespace || '-';
-  const chain = session?.branch?.chain || 'core';
+  const allowedEnv = useMemo(() => {
+    if (role === 'owner' || role === 'admin') return ['admin', 'cs', 'pt', 'sales'];
+    if (role === 'cs') return ['cs'];
+    if (role === 'pt') return ['pt'];
+    if (role === 'sales') return ['sales'];
+    return [];
+  }, [role]);
+
+  function goToEnv(env) {
+    if (!allowedEnv.includes(env)) return;
+    if (env === 'admin') {
+      navigate(`/a/${accountSlug}/admin/dashboard`);
+      return;
+    }
+    if (env === 'sales') {
+      navigate(`/a/${accountSlug}/sales/dashboard`);
+      return;
+    }
+    if (env === 'pt') {
+      navigate(`/a/${accountSlug}/pt/dashboard`);
+      return;
+    }
+    navigate(`/a/${accountSlug}/cs/dashboard`);
+  }
+
   const filteredMembers = members.filter((item) =>
     item.member_name.toLowerCase().includes(memberQuery.toLowerCase())
   );
@@ -106,6 +146,16 @@ export default function AdminPage() {
     item.trainer_name.toLowerCase().includes(trainerQuery.toLowerCase()) ||
     item.phone.toLowerCase().includes(trainerQuery.toLowerCase()) ||
     item.specialization.toLowerCase().includes(trainerQuery.toLowerCase())
+  );
+  const filteredProducts = products.filter((item) =>
+    item.product_name.toLowerCase().includes(productQuery.toLowerCase()) ||
+    item.category.toLowerCase().includes(productQuery.toLowerCase()) ||
+    item.price.toLowerCase().includes(productQuery.toLowerCase())
+  );
+  const filteredPackages = packages.filter((item) =>
+    item.package_name.toLowerCase().includes(packageQuery.toLowerCase()) ||
+    item.package_type.toLowerCase().includes(packageQuery.toLowerCase()) ||
+    item.duration_months.toLowerCase().includes(packageQuery.toLowerCase())
   );
   const filteredSales = sales.filter((item) =>
     item.sales_name.toLowerCase().includes(salesQuery.toLowerCase()) ||
@@ -162,6 +212,44 @@ export default function AdminPage() {
     setFeedback(`trainer.created: ${trainerForm.trainer_name}`);
     setTrainerForm({ trainer_name: '', phone: '', specialization: '' });
     setTrainerMode('list');
+  }
+
+  function addProduct(e) {
+    e.preventDefault();
+    if (!productForm.product_name || !productForm.price) return;
+    setProducts((prev) => [{ ...productForm, product_id: `prd_${Date.now()}` }, ...prev]);
+    setFeedback(`product.created: ${productForm.product_name}`);
+    setProductForm({ product_name: '', category: 'retail', price: '', stock: '' });
+    setProductMode('list');
+  }
+
+  function viewProduct(item) {
+    setProductForm({
+      product_name: item.product_name || '',
+      category: item.category || 'retail',
+      price: item.price || '',
+      stock: item.stock || ''
+    });
+    setProductMode('add');
+  }
+
+  function addPackageCreation(e) {
+    e.preventDefault();
+    if (!packageForm.package_name || !packageForm.price) return;
+    setPackages((prev) => [{ ...packageForm, package_id: `pkg_${Date.now()}` }, ...prev]);
+    setFeedback(`package.created: ${packageForm.package_name}`);
+    setPackageForm({ package_name: '', package_type: 'membership', duration_months: '1', price: '' });
+    setPackageMode('list');
+  }
+
+  function viewPackageCreation(item) {
+    setPackageForm({
+      package_name: item.package_name || '',
+      package_type: item.package_type || 'membership',
+      duration_months: item.duration_months || '1',
+      price: item.price || ''
+    });
+    setPackageMode('add');
   }
 
   function viewTrainer(item) {
@@ -243,8 +331,25 @@ export default function AdminPage() {
           <p>Tenant administration panel</p>
         </div>
         <div className="meta">
-          <code>namespace: {namespace}</code>
-          <code>chain: {chain}</code>
+          {allowedEnv.length > 0 ? (
+            <label>
+              Environment
+              <select
+                value={targetEnv}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setTargetEnv(next);
+                  goToEnv(next);
+                }}
+              >
+                {allowedEnv.map((env) => (
+                  <option key={env} value={env}>
+                    {env}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           <button className="btn ghost" onClick={() => navigate(accountPath(session, '/cs/dashboard'))}>
             Back to CS dashboard
           </button>
@@ -268,6 +373,12 @@ export default function AdminPage() {
                 }
                 if (tab.id === 'trainer') {
                   setTrainerMode('list');
+                }
+                if (tab.id === 'product') {
+                  setProductMode('list');
+                }
+                if (tab.id === 'package_creation') {
+                  setPackageMode('list');
                 }
                 if (tab.id === 'sales') {
                   setSalesMode('list');
@@ -409,6 +520,144 @@ export default function AdminPage() {
                     <label>capacity<input type="number" min="1" value={classForm.capacity} onChange={(e) => setClassForm((p) => ({ ...p, capacity: e.target.value }))} /></label>
                     <label>start_at<input type="datetime-local" value={classForm.start_at} onChange={(e) => setClassForm((p) => ({ ...p, start_at: e.target.value }))} /></label>
                     <button className="btn" type="submit">Save class</button>
+                  </form>
+                </>
+              )}
+            </>
+          ) : null}
+
+          {activeTab === 'product' ? (
+            <>
+              <p className="eyebrow">Product</p>
+              {productMode === 'list' ? (
+                <>
+                  <div className="panel-head">
+                    <h2>Product list, delete</h2>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginLeft: 'auto' }}>
+                      <input
+                        type="text"
+                        placeholder="Cari product..."
+                        value={productQuery}
+                        onChange={(e) => setProductQuery(e.target.value)}
+                      />
+                      <button className="btn" type="button" onClick={() => setProductMode('add')}>
+                        Add New
+                      </button>
+                    </div>
+                  </div>
+                  <div className="entity-list">
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr>
+                          <th style={{ textAlign: 'left', padding: '0.65rem 0.5rem', borderBottom: '1px solid #d1d5db', background: '#f7efe6', fontWeight: 700 }}>Product</th>
+                          <th style={{ textAlign: 'left', padding: '0.65rem 0.5rem', borderBottom: '1px solid #d1d5db', background: '#f7efe6', fontWeight: 700 }}>Category</th>
+                          <th style={{ textAlign: 'left', padding: '0.65rem 0.5rem', borderBottom: '1px solid #d1d5db', background: '#f7efe6', fontWeight: 700 }}>Price</th>
+                          <th style={{ textAlign: 'left', padding: '0.65rem 0.5rem', borderBottom: '1px solid #d1d5db', background: '#f7efe6', fontWeight: 700 }}>Stock</th>
+                          <th style={{ textAlign: 'left', padding: '0.65rem 0.5rem', borderBottom: '1px solid #d1d5db', background: '#f7efe6', fontWeight: 700 }}>Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredProducts.map((item, idx) => (
+                          <tr key={item.product_id} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f7efe6' }}>
+                            <td style={{ padding: '0.5rem', borderBottom: '1px solid #e5e7eb' }}>{item.product_name}</td>
+                            <td style={{ padding: '0.5rem', borderBottom: '1px solid #e5e7eb' }}>{item.category}</td>
+                            <td style={{ padding: '0.5rem', borderBottom: '1px solid #e5e7eb' }}>{item.price}</td>
+                            <td style={{ padding: '0.5rem', borderBottom: '1px solid #e5e7eb' }}>{item.stock || '-'}</td>
+                            <td style={{ padding: '0.5rem', borderBottom: '1px solid #e5e7eb' }}>
+                              <div className="row-actions">
+                                <ViewButton onClick={() => viewProduct(item)} />
+                                <DeleteButton onClick={() => setProducts((prev) => prev.filter((v) => v.product_id !== item.product_id))} />
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="panel-head">
+                    <h2>Add product</h2>
+                    <button className="btn ghost" type="button" onClick={() => setProductMode('list')}>
+                      Back to list
+                    </button>
+                  </div>
+                  <form className="form" onSubmit={addProduct}>
+                    <label>product_name<input value={productForm.product_name} onChange={(e) => setProductForm((p) => ({ ...p, product_name: e.target.value }))} /></label>
+                    <label>category<select value={productForm.category} onChange={(e) => setProductForm((p) => ({ ...p, category: e.target.value }))}><option value="retail">retail</option><option value="service">service</option><option value="bundle">bundle</option></select></label>
+                    <label>price<input type="number" min="0" value={productForm.price} onChange={(e) => setProductForm((p) => ({ ...p, price: e.target.value }))} /></label>
+                    <label>stock<input type="number" min="0" value={productForm.stock} onChange={(e) => setProductForm((p) => ({ ...p, stock: e.target.value }))} /></label>
+                    <button className="btn" type="submit">Save product</button>
+                  </form>
+                </>
+              )}
+            </>
+          ) : null}
+
+          {activeTab === 'package_creation' ? (
+            <>
+              <p className="eyebrow">Package creation</p>
+              {packageMode === 'list' ? (
+                <>
+                  <div className="panel-head">
+                    <h2>Package list, delete</h2>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginLeft: 'auto' }}>
+                      <input
+                        type="text"
+                        placeholder="Cari package..."
+                        value={packageQuery}
+                        onChange={(e) => setPackageQuery(e.target.value)}
+                      />
+                      <button className="btn" type="button" onClick={() => setPackageMode('add')}>
+                        Add New
+                      </button>
+                    </div>
+                  </div>
+                  <div className="entity-list">
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr>
+                          <th style={{ textAlign: 'left', padding: '0.65rem 0.5rem', borderBottom: '1px solid #d1d5db', background: '#f7efe6', fontWeight: 700 }}>Package</th>
+                          <th style={{ textAlign: 'left', padding: '0.65rem 0.5rem', borderBottom: '1px solid #d1d5db', background: '#f7efe6', fontWeight: 700 }}>Type</th>
+                          <th style={{ textAlign: 'left', padding: '0.65rem 0.5rem', borderBottom: '1px solid #d1d5db', background: '#f7efe6', fontWeight: 700 }}>Duration</th>
+                          <th style={{ textAlign: 'left', padding: '0.65rem 0.5rem', borderBottom: '1px solid #d1d5db', background: '#f7efe6', fontWeight: 700 }}>Price</th>
+                          <th style={{ textAlign: 'left', padding: '0.65rem 0.5rem', borderBottom: '1px solid #d1d5db', background: '#f7efe6', fontWeight: 700 }}>Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredPackages.map((item, idx) => (
+                          <tr key={item.package_id} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f7efe6' }}>
+                            <td style={{ padding: '0.5rem', borderBottom: '1px solid #e5e7eb' }}>{item.package_name}</td>
+                            <td style={{ padding: '0.5rem', borderBottom: '1px solid #e5e7eb' }}>{item.package_type}</td>
+                            <td style={{ padding: '0.5rem', borderBottom: '1px solid #e5e7eb' }}>{item.duration_months} bulan</td>
+                            <td style={{ padding: '0.5rem', borderBottom: '1px solid #e5e7eb' }}>{item.price}</td>
+                            <td style={{ padding: '0.5rem', borderBottom: '1px solid #e5e7eb' }}>
+                              <div className="row-actions">
+                                <ViewButton onClick={() => viewPackageCreation(item)} />
+                                <DeleteButton onClick={() => setPackages((prev) => prev.filter((v) => v.package_id !== item.package_id))} />
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="panel-head">
+                    <h2>Add package</h2>
+                    <button className="btn ghost" type="button" onClick={() => setPackageMode('list')}>
+                      Back to list
+                    </button>
+                  </div>
+                  <form className="form" onSubmit={addPackageCreation}>
+                    <label>package_name<input value={packageForm.package_name} onChange={(e) => setPackageForm((p) => ({ ...p, package_name: e.target.value }))} /></label>
+                    <label>package_type<select value={packageForm.package_type} onChange={(e) => setPackageForm((p) => ({ ...p, package_type: e.target.value }))}><option value="membership">membership</option><option value="pt">pt</option><option value="class">class</option></select></label>
+                    <label>duration_months<input type="number" min="1" value={packageForm.duration_months} onChange={(e) => setPackageForm((p) => ({ ...p, duration_months: e.target.value }))} /></label>
+                    <label>price<input type="number" min="0" value={packageForm.price} onChange={(e) => setPackageForm((p) => ({ ...p, price: e.target.value }))} /></label>
+                    <button className="btn" type="submit">Save package</button>
                   </form>
                 </>
               )}
