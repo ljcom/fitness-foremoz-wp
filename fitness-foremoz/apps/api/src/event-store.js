@@ -29,6 +29,13 @@ export function resolveChainId(branchId) {
   return branchId ? `branch:${branchId}` : 'core';
 }
 
+function duplicateIdError(scope, value) {
+  const error = new Error(`duplicate id detected for ${scope}:${value}`);
+  error.statusCode = 409;
+  error.errorCode = 'EVENTDB_ID_NOT_UNIQUE';
+  return error;
+}
+
 export async function appendDomainEvent({
   tenantId,
   branchId,
@@ -38,6 +45,7 @@ export async function appendDomainEvent({
   subjectId,
   data,
   refs,
+  uniqueIds,
   ts,
   actorKind = 'staff'
 }) {
@@ -46,6 +54,17 @@ export async function appendDomainEvent({
   const eventTime = ts || new Date().toISOString();
 
   return withTx(async (client) => {
+    await client.query(
+      `create table if not exists eventdb_unique_id (
+         namespace_id text not null,
+         id_scope text not null,
+         id_value text not null,
+         reserved_by_event_id text not null,
+         created_at timestamptz not null default now(),
+         primary key (namespace_id, id_scope, id_value)
+       )`
+    );
+
     await client.query(
       `insert into eventdb_chain (namespace_id, chain_id)
        values ($1, $2)
@@ -70,6 +89,25 @@ export async function appendDomainEvent({
       : config.eventGenesisPrevHash;
 
     const eventId = `evt_${Date.now()}_${randomUUID().slice(0, 8)}`;
+
+    for (const item of uniqueIds || []) {
+      const scope = String(item?.scope || '').trim();
+      const value = String(item?.value || '').trim().toLowerCase();
+      if (!scope || !value) continue;
+
+      const reserve = await client.query(
+        `insert into eventdb_unique_id (namespace_id, id_scope, id_value, reserved_by_event_id)
+         values ($1, $2, $3, $4)
+         on conflict do nothing
+         returning id_value`,
+        [namespaceId, scope, value, eventId]
+      );
+
+      if (reserve.rowCount !== 1) {
+        throw duplicateIdError(scope, value);
+      }
+    }
+
     const payload = {
       type: eventType,
       actor: {

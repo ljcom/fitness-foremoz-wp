@@ -163,6 +163,84 @@ select:focus-visible {
   line-height: 1.8;
 }
 
+.landing-section {
+  margin-top: 2.4rem;
+}
+
+.landing-title {
+  margin: 0;
+  font-size: clamp(1.4rem, 2.6vw, 2rem);
+}
+
+.feature-grid {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.feature-card {
+  border: 1px solid #ddccb2;
+  border-radius: 15px;
+  background: linear-gradient(180deg, #fffdf8, #fff7eb);
+  padding: 1rem;
+  box-shadow: 0 10px 20px #6e56390f;
+}
+
+.feature-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.feature-icon {
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 10px;
+  border: 1px solid #d8b792;
+  background: linear-gradient(180deg, #fff8ef, #ffedd9);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-dark);
+  flex-shrink: 0;
+}
+
+.feature-icon svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: currentColor;
+}
+
+.feature-card h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.feature-card p {
+  margin: 0.55rem 0 0;
+  color: var(--muted);
+}
+
+.cta {
+  margin-top: 2.4rem;
+  border: 1px solid #dcbf9b;
+  border-radius: 18px;
+  padding: 1.2rem;
+  background: linear-gradient(180deg, #fff6ec, #ffe9d6);
+  box-shadow: 0 16px 30px #92582a1a;
+}
+
+.cta h2 {
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+  letter-spacing: -0.01em;
+}
+
+.cta p {
+  color: #5c4c3a;
+}
+
 .auth-shell {
   max-width: 1050px;
   margin: 0 auto;
@@ -653,6 +731,72 @@ code {
   align-items: flex-end;
 }
 
+.wizard {
+  max-width: 860px;
+}
+
+.wizard-steps {
+  display: inline-flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.wizard-steps span {
+  border: 1px solid #dec7a9;
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.86rem;
+  color: var(--muted);
+  background: #fff9ef;
+}
+
+.wizard-steps span.active {
+  border-color: #cb8b61;
+  color: var(--accent-dark);
+  background: #ffefdf;
+  font-weight: 600;
+}
+
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.plan-card {
+  border: 1px solid #ddceb8;
+  border-radius: 14px;
+  padding: 0.9rem;
+  text-align: left;
+  background: linear-gradient(180deg, #fff, #fff9f1);
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.plan-card:hover {
+  transform: translateY(-1px);
+  border-color: #caab88;
+  box-shadow: 0 10px 20px #6e563912;
+}
+
+.plan-card.selected {
+  border-color: #cb8b61;
+  background: linear-gradient(180deg, #fff2e8, #ffecde);
+  box-shadow: 0 12px 22px #8d68411c;
+}
+
+.plan-card p {
+  margin: 0.4rem 0;
+  color: var(--accent-dark);
+  font-weight: 600;
+}
+
+.plan-card small {
+  color: var(--muted);
+  line-height: 1.4;
+}
+
 @keyframes slideUp {
   from {
     opacity: 0;
@@ -667,6 +811,8 @@ code {
 @media (max-width: 920px) {
   .hero,
   .auth-shell,
+  .feature-grid,
+  .plan-grid,
   .stats-grid,
   .ops-grid,
   .form.grid,

@@ -16,9 +16,17 @@ async function pathExists(targetPath) {
 }
 
 async function resolveCustomJsonDir() {
-  const defaultDir = path.resolve(__dirname, '../../eventdb/mvp-node/custom-json');
+  const defaultCandidates = [
+    path.resolve(__dirname, '../../eventdb-custom-json'),
+    path.resolve(__dirname, '../../eventdb/mvp-node/custom-json')
+  ];
   const configured = process.env.CUSTOM_JSON_DIR;
-  if (!configured) return defaultDir;
+  if (!configured) {
+    for (const candidate of defaultCandidates) {
+      if (await pathExists(candidate)) return candidate;
+    }
+    return defaultCandidates[0];
+  }
 
   const candidates = [
     path.resolve(configured),

@@ -77,6 +77,154 @@ export async function runFitnessProjection({ tenantId, branchId }) {
         continue;
       }
 
+      if (event.event_type === 'member.auth.registered') {
+        await client.query(
+          `insert into read.rm_member_auth (
+             tenant_id, member_id, email, password_hash, status,
+             registered_at, password_changed_at, updated_at
+           ) values ($1,$2,$3,$4,$5,$6,null,$7)
+           on conflict (tenant_id, member_id) do update set
+             email = excluded.email,
+             password_hash = excluded.password_hash,
+             status = excluded.status,
+             updated_at = excluded.updated_at`,
+          [
+            tenant,
+            data.member_id,
+            data.email,
+            data.password_hash,
+            data.status || 'active',
+            data.registered_at || eventTs,
+            eventTs
+          ]
+        );
+        applied += 1;
+        continue;
+      }
+
+      if (event.event_type === 'member.auth.password.changed') {
+        await client.query(
+          `update read.rm_member_auth
+           set password_hash = $3,
+               password_changed_at = $4,
+               updated_at = $4
+           where tenant_id = $1 and member_id = $2`,
+          [tenant, data.member_id, data.password_hash, data.changed_at || eventTs]
+        );
+        applied += 1;
+        continue;
+      }
+
+      if (event.event_type === 'owner.user.created') {
+        await client.query(
+          `insert into read.rm_tenant_user_auth (
+             tenant_id, user_id, full_name, email, role, password_hash, status, created_at, updated_at
+           ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+           on conflict (tenant_id, user_id) do update set
+             full_name = excluded.full_name,
+             email = excluded.email,
+             role = excluded.role,
+             password_hash = excluded.password_hash,
+             status = excluded.status,
+             updated_at = excluded.updated_at`,
+          [
+            tenant,
+            data.user_id,
+            data.full_name,
+            data.email,
+            data.role || 'owner',
+            data.password_hash,
+            data.status || 'active',
+            data.created_at || eventTs,
+            eventTs
+          ]
+        );
+        applied += 1;
+        continue;
+      }
+
+      if (event.event_type === 'owner.user.password.changed') {
+        await client.query(
+          `update read.rm_tenant_user_auth
+           set password_hash = $3,
+               updated_at = $4
+           where tenant_id = $1 and user_id = $2`,
+          [tenant, data.user_id, data.password_hash, data.changed_at || eventTs]
+        );
+        applied += 1;
+        continue;
+      }
+
+      if (event.event_type === 'owner.user.updated') {
+        await client.query(
+          `update read.rm_tenant_user_auth
+           set full_name = coalesce($3, full_name),
+               role = coalesce($4, role),
+               updated_at = $5
+           where tenant_id = $1 and user_id = $2`,
+          [tenant, data.user_id, data.full_name || null, data.role || null, data.updated_at || eventTs]
+        );
+        applied += 1;
+        continue;
+      }
+
+      if (event.event_type === 'owner.user.deleted') {
+        await client.query(
+          `update read.rm_tenant_user_auth
+           set status = 'deleted',
+               updated_at = $3
+           where tenant_id = $1 and user_id = $2`,
+          [tenant, data.user_id, data.deleted_at || eventTs]
+        );
+        applied += 1;
+        continue;
+      }
+
+      if (event.event_type === 'owner.tenant.setup.saved') {
+        await client.query(
+          `insert into read.rm_owner_setup (
+             tenant_id, gym_name, branch_id, account_slug, status, updated_at
+           ) values ($1,$2,$3,$4,'active',$5)
+           on conflict (tenant_id) do update set
+             gym_name = excluded.gym_name,
+             branch_id = excluded.branch_id,
+             account_slug = excluded.account_slug,
+             status = 'active',
+             updated_at = excluded.updated_at`,
+          [tenant, data.gym_name, data.branch_id, data.account_slug, data.saved_at || eventTs]
+        );
+        applied += 1;
+        continue;
+      }
+
+      if (event.event_type === 'owner.tenant.setup.deleted') {
+        await client.query(
+          `update read.rm_owner_setup
+           set status = 'deleted',
+               updated_at = $2
+           where tenant_id = $1`,
+          [tenant, data.deleted_at || eventTs]
+        );
+        applied += 1;
+        continue;
+      }
+
+      if (event.event_type === 'owner.saas.extended') {
+        await client.query(
+          `insert into read.rm_owner_saas (
+             tenant_id, total_months, last_note, last_extended_at, updated_at
+           ) values ($1,$2,$3,$4,$4)
+           on conflict (tenant_id) do update set
+             total_months = read.rm_owner_saas.total_months + excluded.total_months,
+             last_note = excluded.last_note,
+             last_extended_at = excluded.last_extended_at,
+             updated_at = excluded.updated_at`,
+          [tenant, Number(data.months || 0), data.note || null, data.extended_at || eventTs]
+        );
+        applied += 1;
+        continue;
+      }
+
       if (event.event_type === 'subscription.activated') {
         await client.query(
           `insert into read.rm_subscription_active (

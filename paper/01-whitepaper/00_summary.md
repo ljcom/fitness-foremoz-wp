@@ -29,6 +29,7 @@ Read layer:
 
 - tenant signin: `fitness.foremoz.com/signin` untuk role `admin`, `sales`, `pt`, `gov`.
 - member signin: `fitness.foremoz.com/a/<account>/member/signin` khusus role `member`.
+- member auth backend: `POST /v1/auth/signup`, `POST /v1/auth/signin`, `GET /v1/auth/me` dengan JWT bearer.
 
 ## Core Capabilities
 

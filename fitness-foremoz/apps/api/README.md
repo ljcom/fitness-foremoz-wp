@@ -6,6 +6,7 @@ API ini adalah lapisan domain untuk fitness operations di atas EventDB write lay
 
 - Append event domain:
   - member
+  - member auth (signup/signin via JWT)
   - subscription
   - payment
   - checkin
@@ -26,8 +27,31 @@ npm run dev
 
 Pastikan `DATABASE_URL` menunjuk database EventDB yang sama dengan `apps/eventdb/mvp-node`.
 
+Tambahkan konfigurasi JWT di `.env`:
+
+```bash
+JWT_SECRET=dev-change-this-secret
+JWT_ISSUER=foremoz-fitness-api
+JWT_AUDIENCE=foremoz-fitness-member
+JWT_EXPIRES_IN_SEC=86400
+```
+
 ## Endpoint utama
 
+- `POST /v1/auth/signup`
+- `POST /v1/auth/signin`
+- `GET /v1/auth/me` (Bearer token)
+- `POST /v1/tenant/auth/signup`
+- `POST /v1/tenant/auth/signin`
+- `GET /v1/owner/setup`
+- `POST /v1/owner/setup/save`
+- `DELETE /v1/owner/setup`
+- `GET /v1/owner/users`
+- `POST /v1/owner/users`
+- `PATCH /v1/owner/users/:userId`
+- `DELETE /v1/owner/users/:userId`
+- `GET /v1/owner/saas`
+- `POST /v1/owner/saas/extend`
 - `POST /v1/members/register`
 - `POST /v1/subscriptions/activate`
 - `POST /v1/payments/record`
@@ -42,3 +66,51 @@ Pastikan `DATABASE_URL` menunjuk database EventDB yang sama dengan `apps/eventdb
 - `GET /v1/read/payments/queue`
 - `GET /v1/read/pt-balance`
 - `GET /v1/read/dashboard`
+
+## Auth payload ringkas
+
+`POST /v1/auth/signup`
+
+```json
+{
+  "tenant_id": "tn_001",
+  "member_id": "mem_001",
+  "full_name": "Member One",
+  "phone": "+62812xxxx",
+  "email": "member1@example.com",
+  "password": "supersecret123"
+}
+```
+
+`POST /v1/auth/signin`
+
+```json
+{
+  "tenant_id": "tn_001",
+  "email": "member1@example.com",
+  "password": "supersecret123"
+}
+```
+
+`POST /v1/tenant/auth/signup`
+
+```json
+{
+  "tenant_id": "tn_001",
+  "full_name": "Owner One",
+  "email": "admin1@example.com",
+  "password": "supersecret123",
+  "role": "owner"
+}
+```
+
+`POST /v1/tenant/auth/signin`
+
+```json
+{
+  "tenant_id": "tn_001",
+  "email": "admin1@example.com",
+  "password": "supersecret123",
+  "role": "owner"
+}
+```

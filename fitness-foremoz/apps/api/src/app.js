@@ -1,10 +1,31 @@
 import express from 'express';
+import { randomUUID } from 'node:crypto';
 import { query, pool } from './db.js';
 import { appendDomainEvent } from './event-store.js';
 import { runFitnessProjection } from './projection.js';
 import { config } from './config.js';
+import {
+  hashPassword,
+  normalizeEmail,
+  readBearerToken,
+  signMemberJwt,
+  signTenantJwt,
+  verifyMemberJwt,
+  verifyPassword
+} from './auth.js';
 
 const app = express();
+app.use((req, res, next) => {
+  const allowOrigin = config.corsOrigin || '*';
+  res.header('Access-Control-Allow-Origin', allowOrigin);
+  res.header('Vary', 'Origin');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  if (req.method === 'OPTIONS') {
+    return res.status(204).send();
+  }
+  return next();
+});
 app.use(express.json({ limit: '1mb' }));
 
 function required(value, name) {
@@ -12,6 +33,13 @@ function required(value, name) {
     throw new Error(`${name} is required`);
   }
   return value;
+}
+
+function fail(statusCode, errorCode, message) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  error.errorCode = errorCode;
+  return error;
 }
 
 function ok(res, data) {
@@ -28,6 +56,610 @@ app.get('/health', async (_req, res) => {
     return res.json({ status: 'ok' });
   } catch (error) {
     return res.status(500).json({ status: 'FAIL', error_code: 'DB_UNAVAILABLE', message: error.message });
+  }
+});
+
+app.post('/v1/tenant/auth/signup', async (req, res, next) => {
+  try {
+    const data = req.body || {};
+    const tenantId = data.tenant_id || config.defaultTenantId;
+    const role = data.role || 'owner';
+    const email = normalizeEmail(required(data.email, 'email'));
+    const password = String(required(data.password, 'password'));
+    const fullName = required(data.full_name, 'full_name');
+    const userId = data.user_id || `usr_${Date.now()}_${randomUUID().slice(0, 8)}`;
+    const ts = new Date().toISOString();
+
+    if (password.length < 8) {
+      throw fail(400, 'AUTH_WEAK_PASSWORD', 'password min length is 8 characters');
+    }
+
+    const existing = await query(
+      `select user_id
+       from read.rm_tenant_user_auth
+       where tenant_id = $1 and email = $2
+       limit 1`,
+      [tenantId, email]
+    );
+    if (existing.rows[0]) {
+      throw fail(409, 'AUTH_EMAIL_EXISTS', 'email already registered');
+    }
+
+    const passwordHash = await hashPassword(password);
+    const event = await appendDomainEvent({
+      tenantId,
+      branchId: null,
+      actorId: 'owner_self_service',
+      actorKind: 'owner',
+      eventType: 'owner.user.created',
+      subjectKind: 'tenant_user',
+      subjectId: userId,
+      data: {
+        tenant_id: tenantId,
+        user_id: userId,
+        full_name: fullName,
+        email,
+        role,
+        password_hash: passwordHash,
+        status: 'active',
+        created_at: ts
+      },
+      refs: {},
+      uniqueIds: [
+        { scope: 'tenant_user.user_id', value: userId },
+        { scope: 'tenant_user.email', value: email }
+      ],
+      ts
+    });
+
+    await runFitnessProjection({ tenantId, branchId: null });
+    const tokenSigned = signTenantJwt({ tenantId, userId, email, role });
+
+    return created(res, {
+      user: {
+        tenant_id: tenantId,
+        user_id: userId,
+        full_name: fullName,
+        email,
+        role,
+        status: 'active'
+      },
+      auth: {
+        access_token: tokenSigned.token,
+        token_type: 'Bearer',
+        expires_in: config.jwtExpiresInSec
+      },
+      event
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.post('/v1/tenant/auth/signin', async (req, res, next) => {
+  try {
+    const data = req.body || {};
+    const tenantId = data.tenant_id || config.defaultTenantId;
+    const email = normalizeEmail(required(data.email, 'email'));
+    const password = String(required(data.password, 'password'));
+    const requestedRole = data.role || null;
+
+    const authResult = await query(
+      `select tenant_id, user_id, full_name, email, role, password_hash, status
+       from read.rm_tenant_user_auth
+       where tenant_id = $1 and email = $2
+       limit 1`,
+      [tenantId, email]
+    );
+    const authRow = authResult.rows[0];
+    if (!authRow) {
+      throw fail(401, 'AUTH_INVALID_CREDENTIALS', 'invalid email or password');
+    }
+
+    if (authRow.status !== 'active') {
+      throw fail(403, 'AUTH_ACCOUNT_INACTIVE', 'account is not active');
+    }
+
+    if (requestedRole && requestedRole !== authRow.role) {
+      throw fail(403, 'AUTH_ROLE_MISMATCH', `account role mismatch, expected ${requestedRole}`);
+    }
+
+    const matched = await verifyPassword(password, authRow.password_hash);
+    if (!matched) {
+      throw fail(401, 'AUTH_INVALID_CREDENTIALS', 'invalid email or password');
+    }
+
+    const tokenSigned = signTenantJwt({
+      tenantId,
+      userId: authRow.user_id,
+      email: authRow.email,
+      role: authRow.role
+    });
+
+    return ok(res, {
+      user: {
+        tenant_id: tenantId,
+        user_id: authRow.user_id,
+        full_name: authRow.full_name,
+        email: authRow.email,
+        role: authRow.role,
+        status: authRow.status
+      },
+      auth: {
+        access_token: tokenSigned.token,
+        token_type: 'Bearer',
+        expires_in: config.jwtExpiresInSec
+      }
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.get('/v1/owner/setup', async (req, res, next) => {
+  try {
+    const tenantId = req.query.tenant_id || config.defaultTenantId;
+    const { rows } = await query(
+      `select tenant_id, gym_name, branch_id, account_slug, status, updated_at
+       from read.rm_owner_setup
+       where tenant_id = $1
+       limit 1`,
+      [tenantId]
+    );
+    return ok(res, { row: rows[0] || null });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.post('/v1/owner/setup/save', async (req, res, next) => {
+  try {
+    const data = req.body || {};
+    const tenantId = data.tenant_id || config.defaultTenantId;
+    const branchId = required(data.branch_id, 'branch_id');
+    const accountSlug = required(data.account_slug, 'account_slug');
+    const event = await appendDomainEvent({
+      tenantId,
+      branchId: null,
+      actorId: data.actor_id || 'owner_self_service',
+      actorKind: 'owner',
+      eventType: 'owner.tenant.setup.saved',
+      subjectKind: 'tenant_setup',
+      subjectId: tenantId,
+      data: {
+        tenant_id: tenantId,
+        gym_name: required(data.gym_name, 'gym_name'),
+        branch_id: branchId,
+        account_slug: accountSlug,
+        saved_at: new Date().toISOString()
+      },
+      refs: {}
+    });
+    await runFitnessProjection({ tenantId, branchId: null });
+    return created(res, { event });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.delete('/v1/owner/setup', async (req, res, next) => {
+  try {
+    const data = req.body || {};
+    const tenantId = data.tenant_id || req.query.tenant_id || config.defaultTenantId;
+    const event = await appendDomainEvent({
+      tenantId,
+      branchId: null,
+      actorId: data.actor_id || 'owner_self_service',
+      actorKind: 'owner',
+      eventType: 'owner.tenant.setup.deleted',
+      subjectKind: 'tenant_setup',
+      subjectId: tenantId,
+      data: {
+        tenant_id: tenantId,
+        deleted_at: new Date().toISOString()
+      },
+      refs: {}
+    });
+    await runFitnessProjection({ tenantId, branchId: null });
+    return ok(res, { event });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.get('/v1/owner/users', async (req, res, next) => {
+  try {
+    const tenantId = req.query.tenant_id || config.defaultTenantId;
+    const status = req.query.status || 'active';
+    const { rows } = await query(
+      `select tenant_id, user_id, full_name, email, role, status, created_at, updated_at
+       from read.rm_tenant_user_auth
+       where tenant_id = $1 and status = $2
+       order by updated_at desc`,
+      [tenantId, status]
+    );
+    return ok(res, { rows });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.post('/v1/owner/users', async (req, res, next) => {
+  try {
+    const data = req.body || {};
+    const tenantId = data.tenant_id || config.defaultTenantId;
+    const role = data.role || 'staff';
+    const email = normalizeEmail(required(data.email, 'email'));
+    const password = String(required(data.password, 'password'));
+    const fullName = required(data.full_name, 'full_name');
+    const userId = data.user_id || `usr_${Date.now()}_${randomUUID().slice(0, 8)}`;
+    const ts = new Date().toISOString();
+
+    if (password.length < 8) {
+      throw fail(400, 'AUTH_WEAK_PASSWORD', 'password min length is 8 characters');
+    }
+
+    const passwordHash = await hashPassword(password);
+    const event = await appendDomainEvent({
+      tenantId,
+      branchId: null,
+      actorId: data.actor_id || 'owner_self_service',
+      actorKind: 'owner',
+      eventType: 'owner.user.created',
+      subjectKind: 'tenant_user',
+      subjectId: userId,
+      data: {
+        tenant_id: tenantId,
+        user_id: userId,
+        full_name: fullName,
+        email,
+        role,
+        password_hash: passwordHash,
+        status: 'active',
+        created_at: ts
+      },
+      refs: {},
+      uniqueIds: [
+        { scope: 'tenant_user.user_id', value: userId },
+        { scope: 'tenant_user.email', value: email }
+      ],
+      ts
+    });
+
+    await runFitnessProjection({ tenantId, branchId: null });
+    return created(res, { event });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.patch('/v1/owner/users/:userId', async (req, res, next) => {
+  try {
+    const data = req.body || {};
+    const tenantId = data.tenant_id || config.defaultTenantId;
+    const userId = required(req.params.userId, 'userId');
+    const fullName = data.full_name || null;
+    const role = data.role || null;
+    if (!fullName && !role) {
+      throw fail(400, 'BAD_REQUEST', 'full_name or role is required');
+    }
+
+    const event = await appendDomainEvent({
+      tenantId,
+      branchId: null,
+      actorId: data.actor_id || 'owner_self_service',
+      actorKind: 'owner',
+      eventType: 'owner.user.updated',
+      subjectKind: 'tenant_user',
+      subjectId: userId,
+      data: {
+        tenant_id: tenantId,
+        user_id: userId,
+        full_name: fullName,
+        role,
+        updated_at: new Date().toISOString()
+      },
+      refs: {}
+    });
+
+    await runFitnessProjection({ tenantId, branchId: null });
+    return ok(res, { event });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.delete('/v1/owner/users/:userId', async (req, res, next) => {
+  try {
+    const data = req.body || {};
+    const tenantId = data.tenant_id || req.query.tenant_id || config.defaultTenantId;
+    const userId = required(req.params.userId, 'userId');
+    const event = await appendDomainEvent({
+      tenantId,
+      branchId: null,
+      actorId: data.actor_id || 'owner_self_service',
+      actorKind: 'owner',
+      eventType: 'owner.user.deleted',
+      subjectKind: 'tenant_user',
+      subjectId: userId,
+      data: {
+        tenant_id: tenantId,
+        user_id: userId,
+        deleted_at: new Date().toISOString()
+      },
+      refs: {}
+    });
+
+    await runFitnessProjection({ tenantId, branchId: null });
+    return ok(res, { event });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.get('/v1/owner/saas', async (req, res, next) => {
+  try {
+    const tenantId = req.query.tenant_id || config.defaultTenantId;
+    const { rows } = await query(
+      `select tenant_id, total_months, last_note, last_extended_at, updated_at
+       from read.rm_owner_saas
+       where tenant_id = $1
+       limit 1`,
+      [tenantId]
+    );
+    return ok(res, { row: rows[0] || null });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.post('/v1/owner/saas/extend', async (req, res, next) => {
+  try {
+    const data = req.body || {};
+    const tenantId = data.tenant_id || config.defaultTenantId;
+    const months = Number(required(data.months, 'months'));
+    if (!Number.isFinite(months) || months <= 0) {
+      throw fail(400, 'BAD_REQUEST', 'months must be a positive number');
+    }
+
+    const event = await appendDomainEvent({
+      tenantId,
+      branchId: null,
+      actorId: data.actor_id || 'owner_self_service',
+      actorKind: 'owner',
+      eventType: 'owner.saas.extended',
+      subjectKind: 'tenant_saas',
+      subjectId: tenantId,
+      data: {
+        tenant_id: tenantId,
+        months,
+        note: data.note || null,
+        extended_at: new Date().toISOString()
+      },
+      refs: {}
+    });
+    await runFitnessProjection({ tenantId, branchId: null });
+    return created(res, { event });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.post('/v1/auth/signup', async (req, res, next) => {
+  try {
+    const data = req.body || {};
+    const tenantId = data.tenant_id || config.defaultTenantId;
+    const email = normalizeEmail(required(data.email, 'email'));
+    const password = String(required(data.password, 'password'));
+    const fullName = required(data.full_name, 'full_name');
+    const memberId = data.member_id || `mem_${Date.now()}_${randomUUID().slice(0, 8)}`;
+    const ts = new Date().toISOString();
+
+    if (password.length < 8) {
+      throw fail(400, 'AUTH_WEAK_PASSWORD', 'password min length is 8 characters');
+    }
+
+    const existingAuth = await query(
+      `select member_id
+       from read.rm_member_auth
+       where tenant_id = $1 and email = $2
+       limit 1`,
+      [tenantId, email]
+    );
+
+    if (existingAuth.rows[0]) {
+      throw fail(409, 'AUTH_EMAIL_EXISTS', 'email already registered');
+    }
+
+    const existingMember = await query(
+      `select member_id
+       from read.rm_member
+       where tenant_id = $1 and member_id = $2
+       limit 1`,
+      [tenantId, memberId]
+    );
+
+    const events = [];
+
+    if (!existingMember.rows[0]) {
+      const registerEvent = await appendDomainEvent({
+        tenantId,
+        branchId: null,
+        actorId: 'member_self_service',
+        actorKind: 'member',
+        eventType: 'member.registered',
+        subjectKind: 'member',
+        subjectId: memberId,
+        data: {
+          tenant_id: tenantId,
+          branch_id: data.branch_id || null,
+          member_id: memberId,
+          full_name: fullName,
+          phone: data.phone || null,
+          status: 'active'
+        },
+        refs: {},
+        uniqueIds: [
+          { scope: 'member.member_id', value: memberId },
+          { scope: 'member_auth.email', value: email }
+        ],
+        ts
+      });
+      events.push(registerEvent);
+    }
+
+    const passwordHash = await hashPassword(password);
+    const authEvent = await appendDomainEvent({
+      tenantId,
+      branchId: null,
+      actorId: 'member_self_service',
+      actorKind: 'member',
+      eventType: 'member.auth.registered',
+      subjectKind: 'member_auth',
+      subjectId: memberId,
+      data: {
+        tenant_id: tenantId,
+        branch_id: data.branch_id || null,
+        member_id: memberId,
+        email,
+        password_hash: passwordHash,
+        status: 'active',
+        registered_at: ts
+      },
+      refs: {},
+      ts
+    });
+    events.push(authEvent);
+
+    await runFitnessProjection({ tenantId, branchId: null });
+
+    const tokenSigned = signMemberJwt({ tenantId, memberId, email });
+    return created(res, {
+      member: {
+        tenant_id: tenantId,
+        member_id: memberId,
+        full_name: fullName,
+        email,
+        phone: data.phone || null
+      },
+      auth: {
+        access_token: tokenSigned.token,
+        token_type: 'Bearer',
+        expires_in: config.jwtExpiresInSec
+      },
+      events
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.post('/v1/auth/signin', async (req, res, next) => {
+  try {
+    const data = req.body || {};
+    const tenantId = data.tenant_id || config.defaultTenantId;
+    const email = normalizeEmail(required(data.email, 'email'));
+    const password = String(required(data.password, 'password'));
+
+    const authResult = await query(
+      `select tenant_id, member_id, email, password_hash, status, updated_at
+       from read.rm_member_auth
+       where tenant_id = $1 and email = $2
+       limit 1`,
+      [tenantId, email]
+    );
+
+    const authRow = authResult.rows[0];
+    if (!authRow) {
+      throw fail(401, 'AUTH_INVALID_CREDENTIALS', 'invalid email or password');
+    }
+
+    if (authRow.status !== 'active') {
+      throw fail(403, 'AUTH_ACCOUNT_INACTIVE', 'account is not active');
+    }
+
+    const matched = await verifyPassword(password, authRow.password_hash);
+    if (!matched) {
+      throw fail(401, 'AUTH_INVALID_CREDENTIALS', 'invalid email or password');
+    }
+
+    const memberResult = await query(
+      `select member_id, full_name, phone, status
+       from read.rm_member
+       where tenant_id = $1 and member_id = $2
+       limit 1`,
+      [tenantId, authRow.member_id]
+    );
+
+    const memberRow = memberResult.rows[0] || null;
+    const tokenSigned = signMemberJwt({
+      tenantId,
+      memberId: authRow.member_id,
+      email: authRow.email
+    });
+
+    return ok(res, {
+      member: {
+        tenant_id: tenantId,
+        member_id: authRow.member_id,
+        full_name: memberRow?.full_name || null,
+        phone: memberRow?.phone || null,
+        status: memberRow?.status || authRow.status,
+        email: authRow.email
+      },
+      auth: {
+        access_token: tokenSigned.token,
+        token_type: 'Bearer',
+        expires_in: config.jwtExpiresInSec
+      }
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.get('/v1/auth/me', async (req, res, next) => {
+  try {
+    const token = readBearerToken(req);
+    if (!token) {
+      throw fail(401, 'AUTH_TOKEN_MISSING', 'bearer token is required');
+    }
+
+    const payload = verifyMemberJwt(token);
+    const authResult = await query(
+      `select tenant_id, member_id, email, status
+       from read.rm_member_auth
+       where tenant_id = $1 and member_id = $2
+       limit 1`,
+      [payload.tenant_id, payload.sub]
+    );
+
+    const authRow = authResult.rows[0];
+    if (!authRow || authRow.status !== 'active') {
+      throw fail(401, 'AUTH_TOKEN_REJECTED', 'token subject is no longer active');
+    }
+
+    const memberResult = await query(
+      `select full_name, phone, status
+       from read.rm_member
+       where tenant_id = $1 and member_id = $2
+       limit 1`,
+      [payload.tenant_id, payload.sub]
+    );
+
+    return ok(res, {
+      member: {
+        tenant_id: payload.tenant_id,
+        member_id: payload.sub,
+        role: payload.role,
+        email: authRow.email,
+        full_name: memberResult.rows[0]?.full_name || null,
+        phone: memberResult.rows[0]?.phone || null,
+        status: memberResult.rows[0]?.status || authRow.status
+      }
+    });
+  } catch (error) {
+    return next(error);
   }
 });
 
@@ -50,7 +682,8 @@ app.post('/v1/members/register', async (req, res, next) => {
         phone: data.phone || null,
         status: data.status || 'active'
       },
-      refs: {}
+      refs: {},
+      uniqueIds: [{ scope: 'member.member_id', value: required(data.member_id, 'member_id') }]
     });
     return created(res, { event });
   } catch (error) {
@@ -79,7 +712,8 @@ app.post('/v1/subscriptions/activate', async (req, res, next) => {
         end_date: required(data.end_date, 'end_date'),
         status: data.status || 'active'
       },
-      refs: { payment_id: data.payment_id || null }
+      refs: { payment_id: data.payment_id || null },
+      uniqueIds: [{ scope: 'subscription.subscription_id', value: required(data.subscription_id, 'subscription_id') }]
     });
     return created(res, { event });
   } catch (error) {
@@ -110,7 +744,8 @@ app.post('/v1/payments/record', async (req, res, next) => {
         proof_url: data.proof_url || null,
         recorded_at: data.recorded_at || new Date().toISOString()
       },
-      refs: { subscription_id: data.subscription_id || null }
+      refs: { subscription_id: data.subscription_id || null },
+      uniqueIds: [{ scope: 'payment.payment_id', value: required(data.payment_id, 'payment_id') }]
     });
     return created(res, { event });
   } catch (error) {
@@ -137,7 +772,8 @@ app.post('/v1/checkins/log', async (req, res, next) => {
         channel: data.channel || 'manual',
         checkin_at: data.checkin_at || new Date().toISOString()
       },
-      refs: {}
+      refs: {},
+      uniqueIds: [{ scope: 'checkin.checkin_id', value: required(data.checkin_id, 'checkin_id') }]
     });
     return created(res, { event });
   } catch (error) {
@@ -167,7 +803,8 @@ app.post('/v1/bookings/classes/create', async (req, res, next) => {
         status: data.status || 'booked',
         booked_at: data.booked_at || new Date().toISOString()
       },
-      refs: { subscription_id: data.subscription_id || null }
+      refs: { subscription_id: data.subscription_id || null },
+      uniqueIds: [{ scope: 'booking.booking_id', value: required(data.booking_id, 'booking_id') }]
     });
     return created(res, { event });
   } catch (error) {
@@ -195,7 +832,8 @@ app.post('/v1/pt/packages/assign', async (req, res, next) => {
         total_sessions: Number(required(data.total_sessions, 'total_sessions')),
         assigned_at: data.assigned_at || new Date().toISOString()
       },
-      refs: {}
+      refs: {},
+      uniqueIds: [{ scope: 'pt_package.pt_package_id', value: required(data.pt_package_id, 'pt_package_id') }]
     });
     return created(res, { event });
   } catch (error) {
@@ -344,9 +982,9 @@ app.get('/v1/read/dashboard', async (req, res, next) => {
 });
 
 app.use((error, _req, res, _next) => {
-  return res.status(400).json({
+  return res.status(error.statusCode || 400).json({
     status: 'FAIL',
-    error_code: 'BAD_REQUEST',
+    error_code: error.errorCode || 'BAD_REQUEST',
     message: error.message
   });
 });

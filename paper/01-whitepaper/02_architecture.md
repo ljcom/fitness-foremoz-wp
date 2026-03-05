@@ -20,6 +20,7 @@ Menetapkan arsitektur runtime untuk public surface, role workspace, dan control 
        v
 [Gym API]
   - tenant/member auth split
+  - member auth via JWT (HS256, bearer token)
   - role guard
   - command validation
   - append event
@@ -39,6 +40,7 @@ Menetapkan arsitektur runtime untuk public surface, role workspace, dan control 
        v
 [Postgres Read Model]
   rm_member
+  rm_member_auth
   rm_subscription_active
   rm_payment_queue
   rm_payment_history
@@ -52,6 +54,9 @@ Menetapkan arsitektur runtime untuk public surface, role workspace, dan control 
 
 - tenant signin di `/signin` untuk `admin`, `sales`, `pt`, `gov`.
 - member signin di `/a/<account>/member/signin` untuk `member`.
+- API `POST /v1/auth/signup` append `member.registered` + `member.auth.registered`, lalu projector update `rm_member` + `rm_member_auth`.
+- API `POST /v1/auth/signin` validasi credential dari `rm_member_auth`, lalu issue JWT bearer untuk member workspace.
+- API `GET /v1/auth/me` memvalidasi JWT dan state member aktif dari read model.
 - admin yang belum setup tenant diarahkan ke `/web/owner`.
 - owner setup menulis tenant config (`tenant_id`, `branch_id`, `account_slug`) lalu mengaktifkan namespace/chain session.
 

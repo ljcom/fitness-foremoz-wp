@@ -1,37 +1,62 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout.jsx';
-import { requireField, setSession } from '../lib.js';
+import { apiJson, requireField, setSession } from '../lib.js';
 
 export default function MemberSignInPage() {
   const navigate = useNavigate();
   const { account } = useParams();
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault();
     try {
+      setError('');
+      setLoading(true);
       const email = requireField(form.email, 'email');
-      requireField(form.password, 'password');
+      const password = requireField(form.password, 'password');
+      const tenantId = account || 'tn_001';
+
+      const result = await apiJson('/v1/auth/signin', {
+        method: 'POST',
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          email,
+          password
+        })
+      });
 
       setSession({
         isAuthenticated: true,
         isOnboarded: true,
         role: 'member',
-        user: { fullName: 'Member', email },
+        user: {
+          fullName: result.member?.full_name || 'Member',
+          email: result.member?.email || email,
+          phone: result.member?.phone || null,
+          memberId: result.member?.member_id || null
+        },
         tenant: {
-          id: account || 'tn_001',
-          account_slug: account || 'tn_001',
-          namespace: `foremoz:fitness:${account || 'tn_001'}`,
+          id: tenantId,
+          account_slug: tenantId,
+          namespace: `foremoz:fitness:${tenantId}`,
           gym_name: 'Foremoz Demo Gym'
         },
-        branch: { id: 'br_jkt_01', chain: 'branch:br_jkt_01' }
+        branch: { id: 'br_jkt_01', chain: 'branch:br_jkt_01' },
+        auth: {
+          tokenType: result.auth?.token_type || 'Bearer',
+          accessToken: result.auth?.access_token || null,
+          expiresIn: result.auth?.expires_in || null
+        }
       });
 
-      navigate(`/a/${account || 'tn_001'}/member/portal`, { replace: true });
+      navigate(`/a/${tenantId}/member/portal`, { replace: true });
     } catch (err) {
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -52,7 +77,9 @@ export default function MemberSignInPage() {
           <input type="password" value={form.password} onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))} />
         </label>
         {error ? <p className="error">{error}</p> : null}
-        <button className="btn" type="submit">Sign in as member</button>
+        <button className="btn" type="submit" disabled={loading}>
+          {loading ? 'Signing in...' : 'Sign in as member'}
+        </button>
       </form>
     </AuthLayout>
   );

@@ -51,6 +51,8 @@ PT session:
 - `pt.activity.logged`
 
 Member self-service:
+- `member.auth.registered`
+- `member.auth.password.changed`
 - `member.profile.updated`
 - `member.password.changed`
 - `member.photo.updated`
@@ -64,7 +66,10 @@ Sales CRM:
 
 Owner and tenant setup:
 - `owner.tenant.setup.saved`
+- `owner.tenant.setup.deleted`
 - `owner.user.created`
+- `owner.user.updated`
+- `owner.user.deleted`
 - `owner.saas.extended`
 
 Gov controls:
@@ -77,6 +82,7 @@ Gov controls:
 ## Required Field Highlights
 
 - `owner.tenant.setup.saved`: `tenant_id`, `branch_id`, `account_slug`, `gym_name`.
+- `member.auth.registered`: `member_id`, `email`, `password_hash`, `status`, `registered_at`.
 - `member.profile.updated`: `member_id`, `full_name`, `phone`, `email`.
 - `sales.prospect.created`: `prospect_id`, `full_name`, `phone`, `source`, `stage`.
 - `gov.tenant.price.updated`: `tenant_id`, `old_price`, `new_price`, `effective_at`.

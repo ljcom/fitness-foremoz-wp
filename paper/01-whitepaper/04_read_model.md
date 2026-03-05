@@ -3,6 +3,10 @@
 ## Core Read Models
 
 - `rm_member`
+- `rm_member_auth`
+- `rm_owner_setup`
+- `rm_owner_saas`
+- `rm_tenant_user_auth`
 - `rm_subscription_active`
 - `rm_attendance_daily`
 - `rm_class_availability`
@@ -12,6 +16,12 @@
 - `rm_dashboard`
 
 ## Role and Surface Read Models
+
+### rm_member_auth
+
+- PK: `(tenant_id, member_id)`
+- Unique key: `(tenant_id, email)`
+- Query use: `signin` credential validation dan token subject validation (`/v1/auth/signin`, `/v1/auth/me`).
 
 ### rm_public_account_profile
 

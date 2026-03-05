@@ -46,3 +46,20 @@ export function getAccountSlug(session) {
 export function accountPath(session, suffix) {
   return `/a/${getAccountSlug(session)}${suffix}`;
 }
+
+export async function apiJson(path, options = {}) {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers: {
+      'content-type': 'application/json',
+      ...(options.headers || {})
+    }
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || payload.status === 'FAIL') {
+    throw new Error(payload.message || `request failed: ${response.status}`);
+  }
+
+  return payload;
+}

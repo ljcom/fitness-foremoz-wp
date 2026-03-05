@@ -17,7 +17,7 @@ import PtPage from './pages/PtPage.jsx';
 import GovPage from './pages/GovPage.jsx';
 import { accountPath, getSession } from './lib.js';
 
-const OPEN_MOCKUP_ACCESS = (import.meta.env.VITE_MOCKUP_OPEN_ACCESS ?? 'true') !== 'false';
+const OPEN_MOCKUP_ACCESS = (import.meta.env.VITE_MOCKUP_OPEN_ACCESS ?? 'false') === 'true';
 
 function roleHome(session) {
   const role = session?.role || 'admin';

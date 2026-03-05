@@ -6,6 +6,7 @@
 - `/a/<account>` public account page.
 - `/signin` tenant signin.
 - `/a/<account>/member/signup` dan `/a/<account>/member/signin`.
+- API auth foundation: `signup/signin/me` dengan JWT untuk member flow.
 
 ## Phase 2 - Owner and Admin Foundation
 

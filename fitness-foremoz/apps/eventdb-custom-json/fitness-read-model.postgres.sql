@@ -21,6 +21,52 @@ CREATE TABLE IF NOT EXISTS read.rm_member (
   PRIMARY KEY (tenant_id, member_id)
 );
 
+CREATE TABLE IF NOT EXISTS read.rm_member_auth (
+  tenant_id TEXT NOT NULL,
+  member_id TEXT NOT NULL,
+  email TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  status TEXT NOT NULL,
+  registered_at TIMESTAMPTZ NOT NULL,
+  password_changed_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ NOT NULL,
+  PRIMARY KEY (tenant_id, member_id),
+  UNIQUE (tenant_id, email)
+);
+
+CREATE TABLE IF NOT EXISTS read.rm_tenant_user_auth (
+  tenant_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  full_name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  role TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  status TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL,
+  PRIMARY KEY (tenant_id, user_id),
+  UNIQUE (tenant_id, email)
+);
+
+CREATE TABLE IF NOT EXISTS read.rm_owner_setup (
+  tenant_id TEXT NOT NULL,
+  gym_name TEXT NOT NULL,
+  branch_id TEXT NOT NULL,
+  account_slug TEXT NOT NULL,
+  status TEXT NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL,
+  PRIMARY KEY (tenant_id)
+);
+
+CREATE TABLE IF NOT EXISTS read.rm_owner_saas (
+  tenant_id TEXT NOT NULL,
+  total_months INTEGER NOT NULL DEFAULT 0,
+  last_note TEXT,
+  last_extended_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ NOT NULL,
+  PRIMARY KEY (tenant_id)
+);
+
 CREATE TABLE IF NOT EXISTS read.rm_subscription_active (
   tenant_id TEXT NOT NULL,
   branch_id TEXT,
@@ -120,6 +166,10 @@ CREATE TABLE IF NOT EXISTS read.rm_dashboard (
 );
 
 CREATE INDEX IF NOT EXISTS idx_rm_member_branch ON read.rm_member (tenant_id, branch_id, status);
+CREATE INDEX IF NOT EXISTS idx_rm_member_auth_email ON read.rm_member_auth (tenant_id, email);
+CREATE INDEX IF NOT EXISTS idx_rm_tenant_user_auth_email ON read.rm_tenant_user_auth (tenant_id, email, role);
+CREATE INDEX IF NOT EXISTS idx_rm_tenant_user_auth_status ON read.rm_tenant_user_auth (tenant_id, status, role);
+CREATE INDEX IF NOT EXISTS idx_rm_owner_setup_slug ON read.rm_owner_setup (account_slug, status);
 CREATE INDEX IF NOT EXISTS idx_rm_subscription_member ON read.rm_subscription_active (tenant_id, member_id, status, end_date);
 CREATE INDEX IF NOT EXISTS idx_rm_booking_class ON read.rm_booking_list (tenant_id, class_id, status, booked_at);
 CREATE INDEX IF NOT EXISTS idx_rm_payment_status ON read.rm_payment_queue (tenant_id, status, recorded_at);

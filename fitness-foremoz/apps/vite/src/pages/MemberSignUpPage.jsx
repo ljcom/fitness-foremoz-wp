@@ -2,39 +2,66 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout.jsx';
-import { requireField, setSession } from '../lib.js';
+import { apiJson, requireField, setSession } from '../lib.js';
 
 export default function MemberSignUpPage() {
   const navigate = useNavigate();
   const { account } = useParams();
   const [form, setForm] = useState({ fullName: '', phone: '', email: '', password: '' });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault();
     try {
+      setError('');
+      setLoading(true);
       const fullName = requireField(form.fullName, 'full name');
       const email = requireField(form.email, 'email');
       const phone = requireField(form.phone, 'phone');
-      requireField(form.password, 'password');
+      const password = requireField(form.password, 'password');
+      const tenantId = account || 'tn_001';
+
+      const result = await apiJson('/v1/auth/signup', {
+        method: 'POST',
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          full_name: fullName,
+          phone,
+          email,
+          password
+        })
+      });
 
       setSession({
         isAuthenticated: true,
         isOnboarded: true,
         role: 'member',
-        user: { fullName, email, phone },
+        user: {
+          fullName: result.member?.full_name || fullName,
+          email: result.member?.email || email,
+          phone: result.member?.phone || phone,
+          memberId: result.member?.member_id || null
+        },
         tenant: {
-          id: account || 'tn_001',
-          account_slug: account || 'tn_001',
-          namespace: `foremoz:fitness:${account || 'tn_001'}`,
+          id: tenantId,
+          account_slug: tenantId,
+          namespace: `foremoz:fitness:${tenantId}`,
           gym_name: 'Foremoz Demo Gym'
         },
-        branch: { id: 'br_jkt_01', chain: 'branch:br_jkt_01' }
+        branch: { id: 'br_jkt_01', chain: 'branch:br_jkt_01' },
+        auth: {
+          tokenType: result.auth?.token_type || 'Bearer',
+          accessToken: result.auth?.access_token || null,
+          expiresIn: result.auth?.expires_in || null
+        }
       });
 
-      navigate(`/a/${account || 'tn_001'}/member/portal`, { replace: true });
+      navigate(`/a/${tenantId}/member/portal`, { replace: true });
     } catch (err) {
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -63,7 +90,9 @@ export default function MemberSignUpPage() {
           <input type="password" value={form.password} onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))} />
         </label>
         {error ? <p className="error">{error}</p> : null}
-        <button className="btn" type="submit">Create member account</button>
+        <button className="btn" type="submit" disabled={loading}>
+          {loading ? 'Creating account...' : 'Create member account'}
+        </button>
       </form>
     </AuthLayout>
   );
