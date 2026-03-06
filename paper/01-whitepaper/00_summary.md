@@ -3,6 +3,7 @@
 ## What Foremoz Fitness Is
 
 Foremoz Fitness adalah vertical SaaS untuk operasi gym dan fitness studio dengan arsitektur event-driven.
+Platform ini diposisikan sebagai sports interaction infrastructure yang menghubungkan `coach`, `studio`, dan `member` melalui event stream.
 
 Write layer:
 - EventDB append-only event stream.
@@ -10,10 +11,19 @@ Write layer:
 Read layer:
 - projection worker membentuk read model untuk query layar operasional.
 
+## Interaction Network Lens
+
+Model relasi utama:
+
+`coach <-> member <-> studio`
+
+Setiap interaksi operasional seperti scheduling, booking, checkin, dan PT session dicatat sebagai event immutable di EventDB.
+Dengan pendekatan ini, platform tidak hanya mengelola operasional internal tenant, tetapi juga membentuk jaringan interaksi antar actor.
+
 ## Product Surfaces
 
-- `fitness.foremoz.com/web`: global landing.
-- `fitness.foremoz.com/web/owner`: owner control page (tenant setup, SaaS extension, user access).
+- `foremoz.com/fitness/`: global landing.
+- `foremoz.com/fitness//owner`: owner control page (tenant setup, SaaS extension, user access).
 - `fitness.foremoz.com/a/<account>`: public account page.
 - `fitness.foremoz.com/a/<account>/member`: member self-service entry.
 - `fitness.foremoz.com/a/<account>/member/signup`: member signup.
@@ -27,7 +37,8 @@ Read layer:
 
 ## Access Model
 
-- tenant signin: `fitness.foremoz.com/signin` untuk role `admin`, `sales`, `pt`, `gov`.
+- owner signin: `foremoz.com/fitness/signin` khusus role `owner`.
+- tenant signin: `fitness.foremoz.com/a/<account>/signin` untuk role `admin`, `sales`, `cs`.
 - member signin: `fitness.foremoz.com/a/<account>/member/signin` khusus role `member`.
 - member auth backend: `POST /v1/auth/signup`, `POST /v1/auth/signin`, `GET /v1/auth/me` dengan JWT bearer.
 
@@ -38,6 +49,8 @@ Read layer:
 - PT session: package, booking, completion, activity logging.
 - attendance: QR/manual checkin.
 - payment recording/confirmation + payment history.
+- invitation-driven growth: actor dapat saling mengundang actor lain untuk membentuk network.
+- passport identity layer: riwayat olahraga portable lintas coach dan studio.
 - member self-service: profile/password/photo, membership purchase, PT self booking.
 - admin operations: member service, user/class/trainer/sales management.
 - sales CRM operations: prospect pipeline, funneling, conversion baseline.

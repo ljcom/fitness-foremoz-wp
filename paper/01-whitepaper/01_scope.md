@@ -12,6 +12,7 @@ Foremoz Fitness berfokus pada operasi fitness center end-to-end:
 - sales CRM pipeline operasional
 - member self-service
 - gov cross-tenant control
+- actor interaction network (`coach`, `studio`, `member/passport`)
 
 ## In Scope
 
@@ -20,6 +21,9 @@ Foremoz Fitness berfokus pada operasi fitness center end-to-end:
 - PT session package + PT activity logging.
 - attendance logging (QR/manual).
 - payment queue + payment history.
+- interaction model antar actor: coach-studio, coach-member, member-studio.
+- invitation workflow: coach invite member/studio, studio invite coach, member invite friend.
+- passport sebagai identity layer olahraga yang portable lintas coach/studio.
 - owner page operations (`/web/owner`): tenant setup namespace/chain, perpanjang SaaS, user access.
 - role workspaces: `admin`, `sales`, `pt`, `member`, `gov`.
 - public web/account surfaces (`/web`, `/a/<account>`).
@@ -58,5 +62,6 @@ Konfigurasi namespace/chain dilakukan di owner page (`/web/owner`), bukan onboar
 - marketplace aggregation.
 - deep accounting.
 - complex marketing automation.
+- supporting staff sebagai node ekonomi utama jaringan.
 
 CRM pada scope ini bersifat operasional pipeline ringan, bukan automation suite enterprise.

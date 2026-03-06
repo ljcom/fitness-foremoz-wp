@@ -43,3 +43,16 @@
 - branch-level access guard.
 - branch performance dashboard.
 - projection partition tuning per namespace/chain.
+
+## Phase 7 - Interaction Network Expansion
+
+- actor graph read model (`coach-member-studio`) untuk relasi aktif/pending.
+- invitation orchestration service dan acceptance flow lintas actor.
+- passport profile enrichment (sport interests, milestones, relationship summary).
+- network-aware recommendation baseline untuk class/PT discovery.
+
+## Phase 8 - Multi-sport Rollout
+
+- generalisasi model actor ke domain `coach-venue-player`.
+- enablement untuk vertical olahraga tambahan (yoga, crossfit, tennis, badminton, martial arts, swimming).
+- shared passport identity tanpa migrasi struktur akun.

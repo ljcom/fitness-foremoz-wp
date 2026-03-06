@@ -5,7 +5,7 @@
 ```json
 {
   "type": "event.type",
-  "actor": { "kind": "admin|sales|pt|member|gov|owner|system", "id": "..." },
+  "actor": { "kind": "coach|studio|member|admin|sales|pt|gov|owner|system", "id": "..." },
   "subject": { "kind": "entity", "id": "..." },
   "data": {},
   "refs": {},
@@ -79,6 +79,17 @@ Gov controls:
 - `gov.tenant.price.updated`
 - `gov.tenant.promotion.updated`
 
+Interaction network and invitation:
+- `passport.created`
+- `passport.sport_interest.updated`
+- `invitation.sent`
+- `invitation.accepted`
+- `invitation.rejected`
+- `coach.studio.linked`
+- `coach.member.linked`
+- `member.studio.joined`
+- `member.studio.left`
+
 ## Required Field Highlights
 
 - `owner.tenant.setup.saved`: `tenant_id`, `branch_id`, `account_slug`, `gym_name`.
@@ -87,5 +98,7 @@ Gov controls:
 - `sales.prospect.created`: `prospect_id`, `full_name`, `phone`, `source`, `stage`.
 - `gov.tenant.price.updated`: `tenant_id`, `old_price`, `new_price`, `effective_at`.
 - `gov.tenant.suspended`: `tenant_id`, `reason`, `suspended_at`.
+- `invitation.sent`: `invitation_id`, `inviter_actor_kind`, `invitee_actor_kind`, `channel`, `target_contact`, `status`.
+- `passport.created`: `passport_id`, `member_id`, `created_at`, `sport_interests`.
 
 Sample payload tersedia di `appendix/sample_event_payload.json`.

@@ -14,6 +14,8 @@
 - `rm_pt_balance`
 - `rm_payment_queue`
 - `rm_dashboard`
+- `rm_actor_network`
+- `rm_passport_profile`
 
 ## Role and Surface Read Models
 
@@ -73,6 +75,38 @@ Columns minimum:
 - `free_months_granted`
 - `promotion_code`
 - `promotion_active`
+- `updated_at`
+
+### rm_actor_network
+
+- PK: `(tenant_id, relation_id)`
+- Query use: graph relasi aktif dan pending antara `coach`, `studio`, `member`.
+
+Columns minimum:
+- `tenant_id`
+- `relation_id`
+- `left_actor_kind`
+- `left_actor_id`
+- `right_actor_kind`
+- `right_actor_id`
+- `status` (`pending|active|inactive`)
+- `source_invitation_id`
+- `updated_at`
+
+### rm_passport_profile
+
+- PK: `(tenant_id, passport_id)`
+- Query use: identitas olahraga member dan rekam ringkas lintas interaksi.
+
+Columns minimum:
+- `tenant_id`
+- `passport_id`
+- `member_id`
+- `sport_interests`
+- `training_history_summary`
+- `coach_relation_count`
+- `studio_relation_count`
+- `performance_milestone_count`
 - `updated_at`
 
 ## Projection Notes

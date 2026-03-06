@@ -3,6 +3,7 @@
 ## Purpose
 
 Menetapkan arsitektur runtime untuk public surface, role workspace, dan control surface di atas EventDB.
+Arsitektur ini juga menjadi infrastructure layer untuk interaksi antar actor utama: `coach`, `studio`, dan `member`.
 
 ## High-Level Architecture
 
@@ -16,6 +17,11 @@ Menetapkan arsitektur runtime untuk public surface, role workspace, dan control 
        v
 [Role Workspaces]
   admin | sales | pt | member | gov
+       |
+       v
+[Interaction Layer]
+  coach <-> member <-> studio
+  invitation + booking + checkin + PT session
        |
        v
 [Gym API]
@@ -48,7 +54,16 @@ Menetapkan arsitektur runtime untuk public surface, role workspace, dan control 
   rm_pt_activity_log
   rm_tenant_performance
   rm_tenant_policy
+  rm_actor_network
+  rm_passport_profile
 ```
+
+## Actor and Role Mapping
+
+- `coach` direpresentasikan melalui workspace `pt` (dan dapat diperluas ke role actor khusus).
+- `studio` adalah tenant/place operator yang menyediakan slot ruang dan waktu.
+- `member` direpresentasikan oleh `passport` sebagai identity layer olahraga yang portable.
+- supporting roles (`admin`, `sales`, `cs`, `reception`) adalah operator proses, bukan node ekonomi utama jaringan.
 
 ## Auth and Routing Rules
 
@@ -87,3 +102,9 @@ Rules:
 - command `class.booking.created` hanya valid bila slot tersedia.
 - projection menghitung `rm_class_availability` dari stream booking.
 - race ditangani oleh deterministic rejection pada command path.
+
+## Interaction Growth Rule
+
+- actor dapat mengirim invitation (`coach`, `studio`, `member`) untuk ekspansi network.
+- jika target studio belum ada di platform, invitation tetap direkam sebagai pending relationship.
+- saat invitation diterima, projector membentuk relasi aktif pada read model network.

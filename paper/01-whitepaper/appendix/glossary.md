@@ -10,7 +10,12 @@
 - subscription: entitlement membership berbasis periode.
 - booking: reservasi slot class atau PT session.
 - PT session: unit sesi personal training.
-- owner page: `fitness.foremoz.com/web/owner` untuk setup tenant dan kontrol owner.
+- owner page: `foremoz.com/fitness//owner` untuk setup tenant dan kontrol owner.
 - public account page: `fitness.foremoz.com/a/<account>` untuk promosi dan conversion.
 - prospect: calon member di pipeline sales CRM.
 - gov console: surface lintas tenant untuk policy dan performance control.
+- coach: actor utama pembuat aktivitas olahraga (kelas, PT session, program).
+- studio (place): actor utama penyedia infrastruktur fisik olahraga.
+- passport: identitas olahraga member yang portable lintas coach/studio.
+- interaction network: model relasi `coach <-> member <-> studio` berbasis event stream.
+- invitation network: mekanisme pertumbuhan actor melalui undangan antar actor.
