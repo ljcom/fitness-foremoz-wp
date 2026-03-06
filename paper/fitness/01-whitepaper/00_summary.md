@@ -23,8 +23,10 @@ Dengan pendekatan ini, platform tidak hanya mengelola operasional internal tenan
 ## Product Surfaces
 
 - `foremoz.com/fitness/`: global landing.
-- `foremoz.com/fitness//owner`: owner control page (tenant setup, SaaS extension, user access).
+- `foremoz.com/fitness/owner`: owner control page (tenant setup, SaaS extension, user access).
 - `fitness.foremoz.com/a/<account>`: public account page.
+- `coach.foremoz.com`: coach identity surface untuk invitation/network interaction. (lihat coach folder)
+- `passport.foremoz.com`: member passport identity surface untuk invitation/network interaction. (lihat passport folder)
 - `fitness.foremoz.com/a/<account>/member`: member self-service entry.
 - `fitness.foremoz.com/a/<account>/member/signup`: member signup.
 - `fitness.foremoz.com/a/<account>/member/signin`: member signin.

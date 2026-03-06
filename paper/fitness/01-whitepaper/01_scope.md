@@ -46,6 +46,14 @@ Foremoz Fitness berfokus pada operasi fitness center end-to-end:
 - `/a/<account>/dashboard/pt`
 - `/gov`
 
+## Actor Identity Domains
+
+Invitation network membutuhkan identity endpoint yang konsisten untuk tiap actor.
+Minimal domain yang wajib tersedia:
+
+- `coach.foremoz.com` untuk coach identity surface (invite acceptance, profile, network relation).
+- `passport.foremoz.com` untuk member passport identity surface (invite acceptance, sport identity, portable history).
+
 ## Multi-tenant and Branch Model
 
 - namespace: `foremoz:fitness:<tenant_id>`

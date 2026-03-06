@@ -19,3 +19,5 @@
 - passport: identitas olahraga member yang portable lintas coach/studio.
 - interaction network: model relasi `coach <-> member <-> studio` berbasis event stream.
 - invitation network: mekanisme pertumbuhan actor melalui undangan antar actor.
+- coach identity domain: `coach.foremoz.com` sebagai surface identitas dan invitation flow actor coach.
+- passport identity domain: `passport.foremoz.com` sebagai surface identitas dan invitation flow actor member.

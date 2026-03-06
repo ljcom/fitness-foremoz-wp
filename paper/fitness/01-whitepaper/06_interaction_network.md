@@ -106,6 +106,19 @@ Actor dapat mengundang actor lain:
 
 Pendekatan ini menurunkan ketergantungan pertumbuhan pada tim sales terpusat.
 
+## Identity Subdomain Implication
+
+Agar invitation network berjalan konsisten, setiap actor memerlukan identity surface berbasis subdomain.
+Minimum requirement:
+
+- `coach.foremoz.com` untuk actor coach.
+- `passport.foremoz.com` untuk actor member.
+
+Implikasi operasional:
+- invitation link diarahkan ke subdomain actor yang relevan.
+- acceptance flow dan actor profile diselesaikan pada identity surface masing-masing.
+- relasi actor yang aktif tetap dicatat sebagai event dan diproyeksikan ke read model network.
+
 ## Event Representation
 
 Setiap interaksi actor direpresentasikan sebagai event dalam EventDB.

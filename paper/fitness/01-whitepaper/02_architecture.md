@@ -12,6 +12,8 @@ Arsitektur ini juga menjadi infrastructure layer untuk interaksi antar actor uta
   /web
   /web/owner
   /a/<account>
+  coach.foremoz.com
+  passport.foremoz.com
   /gov
        |
        v
@@ -69,6 +71,8 @@ Arsitektur ini juga menjadi infrastructure layer untuk interaksi antar actor uta
 
 - tenant signin di `/signin` untuk `admin`, `sales`, `pt`, `gov`.
 - member signin di `/a/<account>/member/signin` untuk `member`.
+- `coach.foremoz.com` menjadi entry identity coach untuk invitation acceptance dan network relationship.
+- `passport.foremoz.com` menjadi entry identity passport/member untuk invitation acceptance dan riwayat portable.
 - API `POST /v1/auth/signup` append `member.registered` + `member.auth.registered`, lalu projector update `rm_member` + `rm_member_auth`.
 - API `POST /v1/auth/signin` validasi credential dari `rm_member_auth`, lalu issue JWT bearer untuk member workspace.
 - API `GET /v1/auth/me` memvalidasi JWT dan state member aktif dari read model.
