@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getSession, requireField, setSession } from '../lib.js';
+import { apiJson, getSession, requireField, setSession } from '../lib.js';
 
 function normalizeHandle(value) {
   return String(value || '')
@@ -15,6 +15,7 @@ export default function OnboardingPage() {
   const navigate = useNavigate();
   const session = getSession();
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     displayName: session?.coach?.displayName || '',
     handle: session?.coach?.handle || '',
@@ -36,22 +37,54 @@ export default function OnboardingPage() {
     setForm((prev) => ({ ...prev, [name]: value }));
   }
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault();
     try {
       setError('');
+      setLoading(true);
       const displayName = requireField(form.displayName, 'display name');
       const handle = normalizeHandle(requireField(form.handle, 'coach handle'));
       if (handle.length < 3) {
         throw new Error('coach handle min length is 3 characters');
       }
 
+      const tenantId = session?.tenant?.id || 'ch_001';
+      const coachId = session?.coach?.id || session?.user?.userId;
+      if (!coachId) {
+        throw new Error('coach_id is missing from session');
+      }
+
+      await apiJson('/v1/coach/profile/publish', {
+        method: 'POST',
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          coach_id: coachId,
+          coach_handle: handle,
+          display_name: displayName,
+          bio: null
+        })
+      });
+
+      await apiJson('/v1/pricing/plan/change', {
+        method: 'POST',
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          coach_id: coachId,
+          plan_code: form.packagePlan || 'free',
+          plan_status: 'active'
+        })
+      });
+
       setSession({
         ...(session || {}),
         isAuthenticated: true,
         isOnboarded: true,
+        tenant: {
+          id: tenantId
+        },
         coach: {
           ...(session?.coach || {}),
+          id: coachId,
           displayName,
           handle,
           mainLocation: form.mainLocation || null,
@@ -61,6 +94,8 @@ export default function OnboardingPage() {
       navigate('/dashboard', { replace: true });
     } catch (err) {
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -100,7 +135,9 @@ export default function OnboardingPage() {
           </div>
 
           {error ? <p className="error">{error}</p> : null}
-          <button className="btn primary" type="submit">Save and open dashboard</button>
+          <button className="btn primary" type="submit" disabled={loading}>
+            {loading ? 'Saving...' : 'Save and open dashboard'}
+          </button>
         </form>
       </section>
     </main>

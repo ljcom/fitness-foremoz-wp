@@ -1,29 +1,6 @@
-import { Link } from 'react-router-dom';
-
-const subscriptions = [
-  { coach: 'Coach Raka', studio: 'Forge Fitness Kuningan', plan: 'Strength Reset', status: 'active', next: '2026-03-20' },
-  { coach: 'Coach Alia', studio: 'Pulse Yoga Kemang', plan: 'Mobility Flow', status: 'active', next: '2026-03-14' },
-  { coach: 'Coach Fajar', studio: 'Arena Boxing Senayan', plan: 'Conditioning Camp', status: 'paused', next: '2026-04-02' }
-];
-
-const performance = [
-  { metric: 'Weight', value: '68.4 kg', trend: '-1.6 kg / 30d' },
-  { metric: 'Muscle Mass', value: '29.8 kg', trend: '+0.7 kg / 30d' },
-  { metric: 'Body Fat', value: '18.1%', trend: '-1.2% / 30d' },
-  { metric: 'Diet Adherence', value: '82%', trend: '+9% / 30d' }
-];
-
-const consents = [
-  { coach: 'Coach Raka', weight: true, muscle: true, diet: true, workout: true },
-  { coach: 'Coach Alia', weight: true, muscle: false, diet: true, workout: true },
-  { coach: 'Coach Fajar', weight: false, muscle: false, diet: false, workout: true }
-];
-
-const features = [
-  'Portfolio langganan lintas coach dalam satu dashboard.',
-  'Snapshot performa personal dan trend berkala.',
-  'Kontrol consent data untuk setiap coach secara granular.'
-];
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { apiJson, clearSession, getSession } from '../lib.js';
 
 const sidebarItems = [
   { id: 'overview', label: 'Overview' },
@@ -40,6 +17,73 @@ function statusPill(status) {
 }
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
+  const session = getSession();
+  const tenantId = session?.tenant?.id || 'ps_001';
+  const passportId = session?.passport?.id || session?.user?.userId || '';
+  const [apiStatus, setApiStatus] = useState('loading');
+  const [apiError, setApiError] = useState('');
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [performance, setPerformance] = useState([]);
+  const [consents, setConsents] = useState([]);
+  const [profile, setProfile] = useState(null);
+  const [planCode, setPlanCode] = useState('free');
+
+  useEffect(() => {
+    async function load() {
+      try {
+        setApiStatus('loading');
+        setApiError('');
+
+        await apiJson('/v1/projections/run', {
+          method: 'POST',
+          body: JSON.stringify({ tenant_id: tenantId })
+        });
+
+        const [profileRes, subsRes, perfRes, consentRes, planRes] = await Promise.all([
+          apiJson(`/v1/passport/profile?tenant_id=${encodeURIComponent(tenantId)}&passport_id=${encodeURIComponent(passportId)}`),
+          apiJson(`/v1/read/subscriptions?tenant_id=${encodeURIComponent(tenantId)}`),
+          apiJson(`/v1/read/performance?tenant_id=${encodeURIComponent(tenantId)}`),
+          apiJson(`/v1/read/consents?tenant_id=${encodeURIComponent(tenantId)}`),
+          apiJson(`/v1/read/passport-plan?tenant_id=${encodeURIComponent(tenantId)}`).catch(() => ({ items: [] }))
+        ]);
+
+        const profileItem = profileRes.item || null;
+        setProfile(profileItem);
+        setSubscriptions((subsRes.items || []).filter((item) => item.passport_id === passportId));
+        setPerformance((perfRes.items || []).filter((item) => item.passport_id === passportId));
+        setConsents((consentRes.items || []).filter((item) => item.passport_id === passportId));
+        const planItem = (planRes.items || []).find((item) => item.passport_id === passportId);
+        setPlanCode(planItem?.plan_code || session?.passport?.planCode || 'free');
+        setApiStatus('ok');
+      } catch (error) {
+        setApiStatus('error');
+        setApiError(error.message);
+      }
+    }
+
+    if (!passportId) {
+      setApiStatus('error');
+      setApiError('passport_id missing in session');
+      return;
+    }
+    load();
+  }, [passportId, tenantId, session?.passport?.planCode]);
+
+  const featureList = useMemo(
+    () => [
+      'Portfolio langganan lintas coach dalam satu dashboard.',
+      'Snapshot performa personal dan trend berkala.',
+      'Kontrol consent data untuk setiap coach secara granular.'
+    ],
+    []
+  );
+
+  function logout() {
+    clearSession();
+    navigate('/signin', { replace: true });
+  }
+
   return (
     <main className="page">
       <section className="hero">
@@ -59,6 +103,7 @@ export default function DashboardPage() {
               </a>
             ))}
           </nav>
+          <button className="btn ghost" type="button" onClick={logout}>Sign out</button>
         </aside>
 
         <div className="dashboard-content">
@@ -66,15 +111,17 @@ export default function DashboardPage() {
             <p className="eyebrow">Informasi</p>
             <h2>Status Akun Passport Kamu</h2>
             <p className="sub">
-              Kamu sedang terhubung ke beberapa coach aktif dan masih bisa menambah program baru tanpa
-              membuat akun tambahan.
+              Passport ID: {passportId || '-'} | Plan: {planCode}
+            </p>
+            <p className="sub">
+              Nama: {profile?.full_name || session?.user?.fullName || '-'} | Interests: {(profile?.sport_interests || []).join(', ') || '-'}
             </p>
           </section>
 
           <section className="card" id="fitur">
             <p className="eyebrow">Fitur</p>
             <ul className="feature-list compact">
-              {features.map((feature) => (
+              {featureList.map((feature) => (
                 <li key={feature}>{feature}</li>
               ))}
             </ul>
@@ -98,15 +145,15 @@ export default function DashboardPage() {
               <h2>Subscription Portfolio</h2>
               <p className="sub">Multi-coach & multi-studio active from one passport.</p>
               <ul className="stack">
+                {subscriptions.length === 0 ? <li className="row"><p>Belum ada subscription.</p></li> : null}
                 {subscriptions.map((row) => (
-                  <li key={`${row.coach}-${row.plan}`} className="row">
+                  <li key={row.subscription_id} className="row">
                     <div>
-                      <strong>{row.plan}</strong>
-                      <p>{row.coach} · {row.studio}</p>
+                      <strong>{row.plan_id || 'Plan'}</strong>
+                      <p>{row.coach_id || '-'} · {row.studio_id || '-'}</p>
                     </div>
                     <div className="row-right">
                       <span className={statusPill(row.status)}>{row.status}</span>
-                      <small>Next {row.next}</small>
                     </div>
                   </li>
                 ))}
@@ -117,11 +164,12 @@ export default function DashboardPage() {
               <h2>Performance Snapshot</h2>
               <p className="sub">Personal logs: diet, weight, muscle, body composition.</p>
               <div className="metrics">
+                {performance.length === 0 ? <p className="sub">Belum ada performance log.</p> : null}
                 {performance.map((m) => (
-                  <div className="metric" key={m.metric}>
-                    <span>{m.metric}</span>
-                    <strong>{m.value}</strong>
-                    <small>{m.trend}</small>
+                  <div className="metric" key={m.metric_log_id}>
+                    <span>{m.metric_category}</span>
+                    <strong>{JSON.stringify(m.metric_value_json)}</strong>
+                    <small>{new Date(m.measured_at).toLocaleString('id-ID')}</small>
                   </div>
                 ))}
               </div>
@@ -137,26 +185,32 @@ export default function DashboardPage() {
                   <thead>
                     <tr>
                       <th>Coach</th>
-                      <th>Weight</th>
-                      <th>Muscle</th>
-                      <th>Diet</th>
-                      <th>Workout</th>
+                      <th>Metric Categories</th>
+                      <th>Status</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {consents.map((c) => (
-                      <tr key={c.coach}>
-                        <td>{c.coach}</td>
-                        <td>{c.weight ? 'Yes' : 'No'}</td>
-                        <td>{c.muscle ? 'Yes' : 'No'}</td>
-                        <td>{c.diet ? 'Yes' : 'No'}</td>
-                        <td>{c.workout ? 'Yes' : 'No'}</td>
-                      </tr>
-                    ))}
+                    {consents.length === 0 ? (
+                      <tr><td colSpan="3">Belum ada consent.</td></tr>
+                    ) : (
+                      consents.map((c) => (
+                        <tr key={c.consent_id}>
+                          <td>{c.coach_id}</td>
+                          <td>{Array.isArray(c.metric_categories) ? c.metric_categories.join(', ') : String(c.metric_categories || '-')}</td>
+                          <td>{c.status}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
             </article>
+          </section>
+
+          <section className="card">
+            {apiStatus === 'loading' ? <p>Connecting to passport API...</p> : null}
+            {apiStatus === 'ok' ? <p>Live API connected (EventDB projection active).</p> : null}
+            {apiStatus === 'error' ? <p>API fallback mode: {apiError}</p> : null}
           </section>
         </div>
       </section>

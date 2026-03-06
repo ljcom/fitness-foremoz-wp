@@ -1,7 +1,6 @@
-export const APP_ORIGIN = import.meta.env.VITE_APP_ORIGIN || 'https://coach.foremoz.com';
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3400';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3600';
 
-const AUTH_KEY = 'fc.auth';
+const AUTH_KEY = 'fp.auth';
 
 export function getSession() {
   try {
@@ -28,11 +27,6 @@ export function requireField(value, name) {
 
 export function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase();
-}
-
-export function coachPath(session, suffix) {
-  const handle = session?.coach?.handle || 'coach-demo';
-  return `/c/${handle}${suffix}`;
 }
 
 export async function apiJson(path, options = {}) {

@@ -17,7 +17,7 @@ const APPS = {
     eventdbPortEnv: 'EVENTDB_FITNESS_PORT',
     eventdbPortDefault: '3020',
     apiPortEnv: 'API_FITNESS_PORT',
-    apiPortDefault: '3300',
+    apiPortDefault: '3310',
     apiPrefix: './fitness-foremoz/apps/api',
     vitePrefix: './fitness-foremoz/apps/vite'
   },

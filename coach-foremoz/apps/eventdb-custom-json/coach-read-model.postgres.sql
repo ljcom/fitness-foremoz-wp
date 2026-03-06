@@ -20,6 +20,19 @@ CREATE TABLE IF NOT EXISTS read.rm_coach_profile_public (
   PRIMARY KEY (tenant_id, coach_id)
 );
 
+CREATE TABLE IF NOT EXISTS read.rm_coach_account_auth (
+  tenant_id TEXT NOT NULL,
+  coach_id TEXT NOT NULL,
+  full_name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  status TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL,
+  PRIMARY KEY (tenant_id, coach_id),
+  UNIQUE (tenant_id, email)
+);
+
 CREATE TABLE IF NOT EXISTS read.rm_coach_offer_catalog (
   tenant_id TEXT NOT NULL,
   offer_id TEXT NOT NULL,
@@ -113,3 +126,6 @@ CREATE TABLE IF NOT EXISTS read.rm_pricing_plan_state (
   updated_at TIMESTAMPTZ NOT NULL,
   PRIMARY KEY (tenant_id, coach_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_rm_coach_account_auth_email
+  ON read.rm_coach_account_auth (tenant_id, email);
