@@ -1,0 +1,17 @@
+{
+  "type": "consent.granted",
+  "actor": { "kind": "member", "id": "member_01" },
+  "subject": { "kind": "consent", "id": "consent_9001" },
+  "data": {
+    "consent_id": "consent_9001",
+    "passport_id": "pass_7788",
+    "coach_id": "coach_01",
+    "metric_categories": ["weight", "muscle", "diet"],
+    "status": "active",
+    "granted_at": "2026-03-06T10:00:00Z"
+  },
+  "refs": {
+    "tenant_id": "tenant_01"
+  },
+  "ts": "2026-03-06T10:00:00Z"
+}

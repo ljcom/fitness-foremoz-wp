@@ -1,0 +1,42 @@
+# PROJECT_MEMORY.md
+Foremoz Passport - Living Project Memory
+
+## 1. Purpose
+
+Dokumen ini menjaga Foremoz Passport tetap fokus sebagai member identity + personal performance product.
+
+## 2. Product Positioning
+
+Foremoz Passport adalah:
+
+- personal sport identity infrastructure.
+- event-driven.
+- multi-tenant ready.
+- multi-coach and multi-studio compatible.
+- consent-first data sharing system.
+
+Foremoz Passport bukan:
+
+- full ERP.
+- accounting platform.
+- generic public marketplace.
+
+## 3. Locked Architecture Decisions
+
+1. EventDB sebagai write layer.
+2. Semua aksi domain menjadi immutable events.
+3. Projection worker membentuk read model.
+4. Tenant isolation via namespace.
+5. Branch partition via chain.
+6. `passport.foremoz.com` adalah primary domain member.
+7. Data sharing ke coach harus berbasis explicit consent.
+
+## 4. Identity and Consent Commitments
+
+- `passport.foremoz.com` untuk identity, tracking, privacy control.
+- data performa member default private.
+- coach hanya melihat data yang diizinkan member.
+
+## 5. Evolution Rule
+
+Jika kebutuhan keluar dari identity/tracking/consent core, buat vertical terpisah.
