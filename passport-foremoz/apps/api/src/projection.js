@@ -44,7 +44,29 @@ export async function runPassportProjection({ tenantId, branchId }) {
       const ts = data.updated_at || data.recorded_at || data.measured_at || evt.payload?.ts || evt.event_time;
       const tenant = data.tenant_id || tenantId;
 
-      if (evt.event_type === 'passport.created' || evt.event_type === 'passport.profile.updated' || evt.event_type === 'passport.sport_interest.updated') {
+      if (evt.event_type === 'passport.account.created') {
+        await client.query(
+          `insert into read.rm_passport_account_auth
+             (tenant_id, passport_id, full_name, email, password_hash, status, created_at, updated_at)
+           values ($1,$2,$3,$4,$5,$6,$7,$8)
+           on conflict (tenant_id, passport_id) do update set
+             full_name = excluded.full_name,
+             email = excluded.email,
+             password_hash = excluded.password_hash,
+             status = excluded.status,
+             updated_at = excluded.updated_at`,
+          [
+            tenant,
+            data.passport_id,
+            data.full_name,
+            data.email,
+            data.password_hash,
+            data.status || 'active',
+            data.created_at || ts,
+            ts
+          ]
+        );
+      } else if (evt.event_type === 'passport.created' || evt.event_type === 'passport.profile.updated' || evt.event_type === 'passport.sport_interest.updated') {
         await client.query(
           `insert into read.rm_passport_profile
              (tenant_id, passport_id, member_id, full_name, sport_interests, updated_at)
