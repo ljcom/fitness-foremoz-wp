@@ -35,6 +35,16 @@ function FeatureIcon({ name }) {
 
 export default function WebLandingPage() {
   const isMockupOpenAccess = (import.meta.env.VITE_MOCKUP_OPEN_ACCESS ?? 'false') === 'true';
+  const infoItems = [
+    {
+      title: 'Operasional Gym Lebih Terkendali',
+      body: 'Satu workspace untuk urus member, jadwal kelas, booking PT, dan aktivitas frontdesk harian.',
+    },
+    {
+      title: 'Growth dan Retention Terukur',
+      body: 'Pantau funnel sales, check-in, dan performa membership agar keputusan operasional lebih presisi.',
+    },
+  ];
   const features = [
     {
       icon: 'member',
@@ -109,8 +119,21 @@ export default function WebLandingPage() {
       </section>
 
       <section className="landing-section">
-        <p className="eyebrow">Fitur Aplikasi</p>
-        <h2 className="landing-title">Fitur utama yang bikin operasional gym lebih efektif</h2>
+        <p className="eyebrow">Informasi</p>
+        <h2 className="landing-title">Platform fitness untuk owner, staff, trainer, dan member</h2>
+        <div className="info-grid">
+          {infoItems.map((item) => (
+            <article className="info-card" key={item.title}>
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="landing-section">
+        <p className="eyebrow">Fitur</p>
+        <h2 className="landing-title">Yang bisa dijalankan dari Fitness Web</h2>
         <div className="feature-grid">
           {features.map((feature) => (
             <article className="feature-card" key={feature.title}>
@@ -127,10 +150,10 @@ export default function WebLandingPage() {
       </section>
 
       <section className="cta">
-        <p className="eyebrow">Call to Action</p>
-        <h2>Siap naik levelkan bisnis gym Anda?</h2>
+        <p className="eyebrow">CTA</p>
+        <h2>Mulai digitalisasi operasional gym Anda hari ini</h2>
         <p>
-          Buat tenant Foremoz hari ini dan mulai kelola member, sales, serta booking PT dari satu platform.
+          Aktivasi tenant, atur tim, lalu jalankan member management, sales pipeline, dan booking PT dari satu dashboard.
         </p>
         <div className="hero-actions">
           {isMockupOpenAccess ? (

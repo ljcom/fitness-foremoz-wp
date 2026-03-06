@@ -96,6 +96,8 @@ h2 {
   padding: 10px 14px;
   border-radius: 12px;
   font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .btn.primary {
@@ -122,6 +124,72 @@ h2 {
   border-radius: 18px;
   background: var(--card);
   padding: 18px;
+}
+
+.feature-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+}
+
+.feature-list.compact {
+  gap: 6px;
+}
+
+.cta-banner {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  background: linear-gradient(140deg, #ffffff 0%, #f2fbf7 60%, #edf8f5 100%);
+}
+
+.auth-shell {
+  min-height: 100vh;
+}
+
+.auth-card {
+  width: min(720px, 100%);
+}
+
+.soft-card {
+  background: linear-gradient(165deg, #ffffff 0%, #f6fbf8 100%);
+}
+
+.form {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+label {
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+}
+
+input,
+select {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  font: inherit;
+  background: #fff;
+}
+
+.hint {
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+  color: var(--muted);
+}
+
+.hint p {
+  margin: 0;
 }
 
 .spotlight {
@@ -252,5 +320,9 @@ th {
 
   .metrics {
     grid-template-columns: 1fr;
+  }
+
+  .cta-banner {
+    align-items: stretch;
   }
 }
