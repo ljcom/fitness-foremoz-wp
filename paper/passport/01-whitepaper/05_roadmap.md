@@ -33,3 +33,9 @@
 
 - domain generalization ke vertical olahraga lain.
 - portable passport continuity lintas sport context.
+
+## Phase 7 - Freemium Maturity
+
+- free tier hardening sebagai baseline.
+- premium insights packaging (`plus`/`pro`) untuk personal analytics lanjutan.
+- subscription conversion experiments dengan guardrail consent/privacy.

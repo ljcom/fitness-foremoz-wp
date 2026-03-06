@@ -66,6 +66,31 @@ Features:
 - assisted check-in tools.
 - advanced operational reporting.
 
+## Judgment Pricing (Indonesia Baseline)
+
+Pricing baseline yang direkomendasikan:
+
+- `Free`: `Rp0` / bulan
+- `Starter`: `Rp99.000` / bulan
+- `Growth`: `Rp299.000` / bulan
+- `Pro / Team`: `Rp799.000` / bulan
+- `Enterprise`: custom (mulai sekitar `Rp2.500.000+` / bulan)
+
+Add-on baseline:
+
+- additional support team seat: `Rp49.000` / seat / bulan
+- advanced analytics add-on: `Rp99.000` / bulan
+
+## Pricing Judgment Rationale
+
+- `Free` dipertahankan permanen untuk menurunkan hambatan adopsi coach baru.
+- `Starter` diposisikan untuk coach individual dengan volume awal, harga dijaga tetap terjangkau pasar UMKM jasa.
+- `Growth` diposisikan untuk coach dengan kebutuhan optimasi conversion dan operasional harian yang lebih padat.
+- `Pro / Team` diposisikan untuk coach yang menjalankan tim onsite dan membutuhkan workflow administratif lebih kuat.
+- `Enterprise` disiapkan untuk kebutuhan multi-branch/multi-brand dan governance SLA khusus.
+
+Angka di atas adalah baseline go-to-market dan dapat disesuaikan melalui experiment terukur terhadap activation, conversion, dan churn.
+
 ## Add-ons (Optional)
 
 - additional support team seats.

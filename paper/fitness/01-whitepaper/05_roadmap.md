@@ -56,3 +56,9 @@
 - generalisasi model actor ke domain `coach-venue-player`.
 - enablement untuk vertical olahraga tambahan (yoga, crossfit, tennis, badminton, martial arts, swimming).
 - shared passport identity tanpa migrasi struktur akun.
+
+## Phase 9 - Pricing Maturity
+
+- free tier stabilization untuk tenant entry-level.
+- tier refinement: `free`, `starter`, `growth`, `multi-branch`, `enterprise`.
+- billing + upgrade self-serve dari owner workspace.

@@ -76,6 +76,7 @@ The following decisions are locked:
 5. Namespace-based tenant isolation.
 6. Chain-based branch separation.
 7. PWA-first deployment model.
+8. Model komersial wajib menyediakan free tier minimum.
 
 Architecture must remain event-first.
 

@@ -30,6 +30,7 @@ Foremoz Fitness berfokus pada operasi fitness center end-to-end:
 - member self-service (`/a/<account>/member/*`).
 - sales CRM pipeline (prospect create/update/follow-up/conversion).
 - gov policy operations (suspend/free/price/promotion).
+- packaging komersial bertingkat dengan free tier minimum untuk tenant kecil.
 
 ## Canonical URL Map
 

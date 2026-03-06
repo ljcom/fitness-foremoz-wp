@@ -30,6 +30,7 @@ Foremoz Passport bukan:
 5. Branch partition via chain.
 6. `passport.foremoz.com` adalah primary domain member.
 7. Data sharing ke coach harus berbasis explicit consent.
+8. Model pricing bersifat freemium dengan free tier permanen sebagai baseline.
 
 ## 4. Identity and Consent Commitments
 

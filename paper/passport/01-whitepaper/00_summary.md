@@ -32,6 +32,7 @@ Read layer:
 - personal tracking: diet, weight, muscle, activity, milestone.
 - consent management per coach dan per data category.
 - audit trail untuk consent grant/revoke.
+- freemium pricing dengan free tier permanen + premium personal insights opsional.
 
 ## Why Event-driven
 

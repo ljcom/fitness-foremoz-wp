@@ -24,6 +24,7 @@ Foremoz Passport berfokus pada peran member sebagai:
   - revoke consent
   - consent per category
 - consent-aware data presentation di coach workspace.
+- freemium packaging (free default + premium personal features opsional).
 
 ## Canonical URL Map
 

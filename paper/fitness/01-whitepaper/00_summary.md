@@ -57,6 +57,7 @@ Dengan pendekatan ini, platform tidak hanya mengelola operasional internal tenan
 - sales CRM operations: prospect pipeline, funneling, conversion baseline.
 - owner operations: tenant setup, SaaS extension, access setup.
 - gov operations: cross-tenant performance, suspend/free/price/promotion control.
+- pricing tiers untuk tenant dengan free plan minimum sebagai entry.
 
 ## Why Event-driven
 
