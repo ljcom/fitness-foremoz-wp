@@ -1,20 +1,20 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { clearSession, getSession } from '../lib.js';
+import { apiJson, clearSession, getSession } from '../lib.js';
 
-const locationClasses = [
+const FALLBACK_CLASSES = [
   { location: 'Kuningan', studio: 'Forge Fitness', className: 'Strength Reset', slot: '18/24', time: '18:30' },
   { location: 'Kemang', studio: 'Pulse Studio', className: 'Mobility Engine', slot: '9/16', time: '07:00' },
   { location: 'Senayan', studio: 'Arena Lab', className: 'Conditioning Blast', slot: '22/24', time: '19:00' }
 ];
 
-const channels = [
+const FALLBACK_CHANNELS = [
   { name: 'WhatsApp', share: 160, click: 109, subscribe: 33 },
   { name: 'Instagram', share: 98, click: 77, subscribe: 26 },
   { name: 'TikTok', share: 81, click: 66, subscribe: 21 }
 ];
 
-const team = [
+const FALLBACK_TEAM = [
   { name: 'Siska', role: 'cs', area: 'Kuningan', status: 'active' },
   { name: 'Andre', role: 'cs', area: 'Kemang', status: 'active' },
   { name: 'Rico', role: 'cs', area: 'Senayan', status: 'shift' }
@@ -34,6 +34,13 @@ const sections = [
   { id: 'team', label: 'Support Team' },
   { id: 'pricing', label: 'Pricing' }
 ];
+
+function formatClassTime(value) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+}
 
 function OverviewSection({ session }) {
   return (
@@ -62,14 +69,14 @@ function OverviewSection({ session }) {
   );
 }
 
-function ClassesSection() {
+function ClassesSection({ rows }) {
   return (
     <article className="card">
       <h2>Join Class by Location</h2>
       <p className="sub">Active classes across linked studios.</p>
       <ul className="list">
-        {locationClasses.map((row) => (
-          <li className="row" key={`${row.location}-${row.className}`}>
+        {rows.map((row) => (
+          <li className="row" key={`${row.location}-${row.className}-${row.time}`}>
             <div>
               <strong>{row.className}</strong>
               <p>{row.studio} · {row.location}</p>
@@ -85,13 +92,13 @@ function ClassesSection() {
   );
 }
 
-function ChannelsSection() {
+function ChannelsSection({ rows }) {
   return (
     <article className="card">
       <h2>Channel Funnel</h2>
       <p className="sub">Share -&gt; Click -&gt; Subscribe performance.</p>
       <div className="channels">
-        {channels.map((c) => (
+        {rows.map((c) => (
           <div className="metric" key={c.name}>
             <strong>{c.name}</strong>
             <span>Share {c.share}</span>
@@ -104,13 +111,13 @@ function ChannelsSection() {
   );
 }
 
-function TeamSection() {
+function TeamSection({ rows }) {
   return (
     <article className="card">
       <h2>Support Team (Higher Tier)</h2>
       <p className="sub">Onsite re-registration and assisted check-in.</p>
       <ul className="list compact">
-        {team.map((t) => (
+        {rows.map((t) => (
           <li className="row" key={t.name}>
             <div>
               <strong>{t.name}</strong>
@@ -151,10 +158,88 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const session = getSession();
   const [activeSection, setActiveSection] = useState('overview');
+  const [classesRows, setClassesRows] = useState(FALLBACK_CLASSES);
+  const [channelRows, setChannelRows] = useState(FALLBACK_CHANNELS);
+  const [teamRows, setTeamRows] = useState(FALLBACK_TEAM);
+  const [planCode, setPlanCode] = useState(session?.coach?.packagePlan || 'free');
+  const [apiStatus, setApiStatus] = useState('loading');
+  const [apiError, setApiError] = useState('');
 
   const activePlan = useMemo(() => {
-    return plans.find((p) => p.code === session?.coach?.packagePlan) || plans[0];
-  }, [session]);
+    return plans.find((p) => p.code === planCode) || plans[0];
+  }, [planCode]);
+
+  useEffect(() => {
+    const tenantId = session?.tenant?.id || 'ch_001';
+    const coachId = session?.coach?.id || session?.user?.userId;
+    if (!coachId) {
+      setApiStatus('error');
+      setApiError('coach_id missing in session');
+      return;
+    }
+
+    async function load() {
+      try {
+        setApiStatus('loading');
+        setApiError('');
+        await apiJson('/v1/projections/run', {
+          method: 'POST',
+          body: JSON.stringify({ tenant_id: tenantId })
+        });
+
+        const [classesRes, funnelRes, supportRes, pricingRes] = await Promise.all([
+          apiJson(`/v1/read/classes/location?tenant_id=${encodeURIComponent(tenantId)}`),
+          apiJson(`/v1/read/funnel?tenant_id=${encodeURIComponent(tenantId)}`),
+          apiJson(`/v1/read/support-team?tenant_id=${encodeURIComponent(tenantId)}`),
+          apiJson(`/v1/read/pricing-plan?tenant_id=${encodeURIComponent(tenantId)}`)
+        ]);
+
+        const cls = (classesRes.items || [])
+          .filter((item) => item.coach_id === coachId)
+          .map((item) => ({
+            location: item.location_id || '-',
+            studio: item.studio_id || 'Studio',
+            className: item.class_id || 'Class',
+            slot: `${Number(item.booked_count || 0)}/${Number(item.capacity || 0)}`,
+            time: formatClassTime(item.start_at)
+          }));
+        if (cls.length > 0) setClassesRows(cls);
+
+        const funnelByChannel = new Map();
+        for (const item of funnelRes.items || []) {
+          if (item.coach_id !== coachId) continue;
+          const key = item.source_channel || 'direct';
+          const current = funnelByChannel.get(key) || { name: key, share: 0, click: 0, subscribe: 0 };
+          current.share += Number(item.share_count || 0);
+          current.click += Number(item.click_count || 0);
+          current.subscribe += Number(item.subscribe_count || 0);
+          funnelByChannel.set(key, current);
+        }
+        const channelData = Array.from(funnelByChannel.values());
+        if (channelData.length > 0) setChannelRows(channelData);
+
+        const support = (supportRes.items || [])
+          .filter((item) => item.coach_id === coachId && item.is_active)
+          .map((item) => ({
+            name: item.team_member_id,
+            role: item.role_name || 'cs',
+            area: item.location_scope ? 'multi-location' : '-',
+            status: item.is_active ? 'active' : 'inactive'
+          }));
+        if (support.length > 0) setTeamRows(support);
+
+        const pricing = (pricingRes.items || []).find((item) => item.coach_id === coachId);
+        if (pricing?.plan_code) setPlanCode(pricing.plan_code);
+
+        setApiStatus('ok');
+      } catch (error) {
+        setApiStatus('error');
+        setApiError(error.message);
+      }
+    }
+
+    load();
+  }, [session?.coach?.id, session?.tenant?.id, session?.user?.userId]);
 
   function logout() {
     clearSession();
@@ -162,9 +247,9 @@ export default function DashboardPage() {
   }
 
   function renderSection() {
-    if (activeSection === 'classes') return <ClassesSection />;
-    if (activeSection === 'channels') return <ChannelsSection />;
-    if (activeSection === 'team') return <TeamSection />;
+    if (activeSection === 'classes') return <ClassesSection rows={classesRows} />;
+    if (activeSection === 'channels') return <ChannelsSection rows={channelRows} />;
+    if (activeSection === 'team') return <TeamSection rows={teamRows} />;
     if (activeSection === 'pricing') return <PricingSection activePlan={activePlan} />;
     return <OverviewSection session={session} />;
   }
@@ -187,16 +272,18 @@ export default function DashboardPage() {
           ))}
         </nav>
         <div className="sidebar-actions">
-          <button className="btn primary">Copy Campaign Link</button>
+          <button className="btn primary" type="button">Copy Campaign Link</button>
           <Link className="btn ghost" to="/onboarding">Edit Onboarding</Link>
-          <button className="btn ghost" onClick={logout}>Sign out</button>
+          <button className="btn ghost" type="button" onClick={logout}>Sign out</button>
         </div>
       </aside>
 
       <section className="dashboard-content">
         {renderSection()}
         <section className="footer-note">
-          <p>Mockup mode: signup/signin/onboarding/dashboard pattern aligned with fitness flow.</p>
+          {apiStatus === 'loading' ? <p>Connecting to coach API...</p> : null}
+          {apiStatus === 'ok' ? <p>Live API connected (EventDB projection active).</p> : null}
+          {apiStatus === 'error' ? <p>API fallback mode: {apiError}</p> : null}
         </section>
       </section>
     </main>

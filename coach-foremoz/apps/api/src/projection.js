@@ -48,7 +48,29 @@ export async function runCoachProjection({ tenantId, branchId }) {
       const ts = data.updated_at || data.created_at || evt.payload?.ts || evt.event_time;
       const tenant = data.tenant_id || tenantId;
 
-      if (evt.event_type === 'coach.profile.published') {
+      if (evt.event_type === 'coach.account.created') {
+        await client.query(
+          `insert into read.rm_coach_account_auth
+             (tenant_id, coach_id, full_name, email, password_hash, status, created_at, updated_at)
+           values ($1,$2,$3,$4,$5,$6,$7,$8)
+           on conflict (tenant_id, coach_id) do update set
+             full_name = excluded.full_name,
+             email = excluded.email,
+             password_hash = excluded.password_hash,
+             status = excluded.status,
+             updated_at = excluded.updated_at`,
+          [
+            tenant,
+            data.coach_id,
+            data.full_name,
+            data.email,
+            data.password_hash,
+            data.status || 'active',
+            data.created_at || ts,
+            ts
+          ]
+        );
+      } else if (evt.event_type === 'coach.profile.published') {
         await client.query(
           `insert into read.rm_coach_profile_public
              (tenant_id, coach_id, coach_handle, display_name, bio, status, updated_at)

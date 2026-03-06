@@ -4,6 +4,7 @@ import { config } from './config.js';
 import { query, pool } from './db.js';
 import { appendDomainEvent } from './event-store.js';
 import { runCoachProjection } from './projection.js';
+import { hashPassword, normalizeEmail, verifyPassword } from './auth.js';
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
@@ -62,6 +63,129 @@ app.get('/health', async (_req, res) => {
     return res.json({ status: 'ok' });
   } catch (error) {
     return res.status(500).json({ status: 'FAIL', error_code: 'DB_UNAVAILABLE', message: error.message });
+  }
+});
+
+app.post('/v1/tenant/auth/signup', async (req, res, next) => {
+  try {
+    const data = req.body || {};
+    const tenantId = data.tenant_id || config.defaultTenantId;
+    const email = normalizeEmail(required(data.email, 'email'));
+    const password = String(required(data.password, 'password'));
+    const fullName = required(data.full_name, 'full_name');
+    const coachId = data.coach_id || `coach_${Date.now()}_${randomUUID().slice(0, 8)}`;
+
+    if (password.length < 8) {
+      throw fail(400, 'AUTH_WEAK_PASSWORD', 'password min length is 8 characters');
+    }
+
+    const existing = await query(
+      `select coach_id
+       from read.rm_coach_account_auth
+       where tenant_id = $1 and email = $2
+       limit 1`,
+      [tenantId, email]
+    );
+    if (existing.rows[0]) {
+      throw fail(409, 'AUTH_EMAIL_EXISTS', 'email already registered');
+    }
+
+    const passwordHash = await hashPassword(password);
+    const payload = {
+      tenant_id: tenantId,
+      coach_id: coachId,
+      full_name: fullName,
+      email,
+      password_hash: passwordHash,
+      status: 'active',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    const result = await appendAndProject({
+      tenantId,
+      branchId: null,
+      actorId: data.actor_id || coachId,
+      actorKind: 'owner',
+      eventType: 'coach.account.created',
+      subjectKind: 'coach_account',
+      subjectId: coachId,
+      data: payload,
+      refs: {}
+    });
+
+    return res.status(201).json({
+      status: 'PASS',
+      user: {
+        tenant_id: tenantId,
+        coach_id: coachId,
+        full_name: fullName,
+        email,
+        status: 'active'
+      },
+      ...result
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.post('/v1/tenant/auth/signin', async (req, res, next) => {
+  try {
+    const data = req.body || {};
+    const tenantId = data.tenant_id || config.defaultTenantId;
+    const email = normalizeEmail(required(data.email, 'email'));
+    const password = String(required(data.password, 'password'));
+
+    const authResult = await query(
+      `select tenant_id, coach_id, full_name, email, password_hash, status
+       from read.rm_coach_account_auth
+       where tenant_id = $1 and email = $2
+       limit 1`,
+      [tenantId, email]
+    );
+    const authRow = authResult.rows[0] || null;
+    if (!authRow) {
+      throw fail(401, 'AUTH_INVALID_CREDENTIALS', 'invalid email or password');
+    }
+    if (authRow.status !== 'active') {
+      throw fail(403, 'AUTH_ACCOUNT_INACTIVE', 'account is not active');
+    }
+
+    const matched = await verifyPassword(password, authRow.password_hash);
+    if (!matched) {
+      throw fail(401, 'AUTH_INVALID_CREDENTIALS', 'invalid email or password');
+    }
+
+    return res.json({
+      status: 'PASS',
+      user: {
+        tenant_id: authRow.tenant_id,
+        coach_id: authRow.coach_id,
+        full_name: authRow.full_name,
+        email: authRow.email,
+        status: authRow.status
+      }
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.get('/v1/coach/profile', async (req, res, next) => {
+  try {
+    const tenantId = req.query.tenant_id || config.defaultTenantId;
+    const coachId = required(req.query.coach_id, 'coach_id');
+    const { rows } = await query(
+      `select tenant_id, coach_id, coach_handle, display_name, bio, status, updated_at
+       from read.rm_coach_profile_public
+       where tenant_id = $1 and coach_id = $2
+       limit 1`,
+      [tenantId, coachId]
+    );
+    return res.json({ status: 'PASS', item: rows[0] || null });
+  } catch (error) {
+    return next(error);
   }
 });
 

@@ -1,47 +1,66 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout.jsx';
-import { setSession, signInCoachUser, requireField } from '../lib.js';
+import { apiJson, normalizeEmail, requireField, setSession } from '../lib.js';
 
 export default function SignInPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   function onChange(e) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault();
     try {
       setError('');
-      const email = requireField(form.email, 'email');
+      setLoading(true);
+      const email = normalizeEmail(requireField(form.email, 'email'));
       const password = requireField(form.password, 'password');
-      const user = signInCoachUser({ email, password });
+      const result = await apiJson('/v1/tenant/auth/signin', {
+        method: 'POST',
+        body: JSON.stringify({ email, password })
+      });
 
-      // On mock mode, onboarding state inferred from previously saved profile if any.
-      const prev = JSON.parse(localStorage.getItem('fc.auth') || 'null');
-      const coach = prev?.user?.email === user.email
-        ? prev.coach
-        : { id: user.userId, handle: '', displayName: '', packagePlan: 'free' };
-      const isOnboarded = Boolean(coach?.handle && coach?.displayName);
+      const tenantId = result.user?.tenant_id;
+      const coachId = result.user?.coach_id;
+      const [profileRes, planRes] = await Promise.all([
+        apiJson(`/v1/coach/profile?tenant_id=${encodeURIComponent(tenantId)}&coach_id=${encodeURIComponent(coachId)}`),
+        apiJson(`/v1/read/pricing-plan?tenant_id=${encodeURIComponent(tenantId)}`)
+      ]);
+      const profile = profileRes.item || null;
+      const activePlan = (planRes.items || []).find((item) => item.coach_id === coachId) || null;
+      const isOnboarded = Boolean(profile?.coach_handle && profile?.display_name);
 
       setSession({
         isAuthenticated: true,
         isOnboarded,
         role: 'owner',
         user: {
-          userId: user.userId,
-          fullName: user.fullName,
-          email: user.email
+          userId: coachId,
+          fullName: result.user?.full_name,
+          email: result.user?.email
         },
-        coach: coach || { id: user.userId, handle: '', displayName: '', packagePlan: 'free' }
+        tenant: {
+          id: tenantId
+        },
+        coach: {
+          id: coachId,
+          handle: profile?.coach_handle || '',
+          displayName: profile?.display_name || '',
+          mainLocation: '',
+          packagePlan: activePlan?.plan_code || 'free'
+        }
       });
 
       navigate(isOnboarded ? '/dashboard' : '/onboarding', { replace: true });
     } catch (err) {
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -62,7 +81,9 @@ export default function SignInPage() {
           <input name="password" type="password" value={form.password} onChange={onChange} />
         </label>
         {error ? <p className="error">{error}</p> : null}
-        <button className="btn primary" type="submit">Sign in</button>
+        <button className="btn primary" type="submit" disabled={loading}>
+          {loading ? 'Signing in...' : 'Sign in'}
+        </button>
       </form>
     </AuthLayout>
   );
