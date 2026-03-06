@@ -115,6 +115,43 @@ h2 {
   gap: 16px;
 }
 
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.dashboard-sidebar {
+  position: sticky;
+  top: 16px;
+}
+
+.dashboard-content {
+  display: grid;
+  gap: 16px;
+}
+
+.side-nav {
+  display: grid;
+  gap: 8px;
+}
+
+.side-link {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  padding: 10px 12px;
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.side-link:hover {
+  border-color: var(--brand);
+  background: #f8fdfb;
+}
+
 .two-up {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -316,6 +353,14 @@ th {
 
   .two-up {
     grid-template-columns: 1fr;
+  }
+
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-sidebar {
+    position: static;
   }
 
   .metrics {
