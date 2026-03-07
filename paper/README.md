@@ -6,8 +6,7 @@
 ## Industry Papers
 - `paper/fitness/`
 - `paper/sport/`
-- `paper/workshop/`
-- `paper/seminar/`
+- `paper/learning/`
 - `paper/tourism/`
 - `paper/performance/`
 - `paper/creator-events/`
@@ -17,4 +16,5 @@
 
 ## Note
 - Folder `paper/coach/` telah dihapus.
+- Folder `paper/seminar/` dan `paper/workshop/` digabung menjadi `paper/learning/`.
 - Sponsorship untuk sementara dibahas di whitepaper general.

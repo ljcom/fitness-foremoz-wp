@@ -1,0 +1,10 @@
+sequenceDiagram
+  participant U as User
+  participant API as API
+  participant DB as EventDB
+  participant PR as Projector
+  participant RM as ReadModel
+  U->>API: create booking
+  API->>DB: append event
+  DB->>PR: stream event
+  PR->>RM: update availability

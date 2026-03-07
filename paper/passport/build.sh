@@ -24,7 +24,33 @@ mkdir -p "$BUILD_DIR"
 
 collect_markdown_files() {
   local dir="$1"
+  if [[ ! -d "$dir" ]]; then
+    return 0
+  fi
   find "$dir" -maxdepth 1 -type f -name "*.md" | sort
+}
+
+generate_diagram_pngs() {
+  if [[ ! -d "$DIAGRAM_DIR" ]]; then
+    return 0
+  fi
+
+  mapfile -t mmd_files < <(find "$DIAGRAM_DIR" -maxdepth 1 -type f -name "*.mmd" | sort)
+  if [[ "${#mmd_files[@]}" -eq 0 ]]; then
+    return 0
+  fi
+
+  if ! command -v mmdc >/dev/null 2>&1; then
+    echo "Error: mmdc tidak ditemukan. Install dulu: npm i -g @mermaid-js/mermaid-cli" >&2
+    exit 1
+  fi
+
+  echo "Generating diagram PNG(s)..."
+  for src in "${mmd_files[@]}"; do
+    out="${src%.mmd}.png"
+    mmdc -i "$src" -o "$out" -b transparent
+    echo "  - $out"
+  done
 }
 
 build_pdf() {
@@ -38,15 +64,7 @@ build_pdf() {
     exit 1
   fi
 
-  pandoc \
-    "${files[@]}" \
-    --from markdown \
-    --toc \
-    --standalone \
-    --resource-path="$WHITEPAPER_DIR:$DIAGRAM_DIR:$ROOT_DIR" \
-    --metadata title="$doc_title" \
-    --pdf-engine="$PDF_ENGINE" \
-    -o "$output_file"
+  pandoc     "${files[@]}"     --from markdown     --toc     --standalone     --resource-path="$WHITEPAPER_DIR:$DIAGRAM_DIR:$ROOT_DIR"     --metadata title="$doc_title"     --pdf-engine="$PDF_ENGINE"     -o "$output_file"
 
   echo "PDF berhasil dibuat: $output_file"
 }
@@ -65,4 +83,5 @@ while IFS= read -r file; do
   files+=("$file")
 done < <(collect_markdown_files "$DIAGRAM_DIR")
 
+generate_diagram_pngs
 build_pdf "$OUTPUT_PDF" "Foremoz Passport Whitepaper" "${files[@]}"
