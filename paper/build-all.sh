@@ -6,10 +6,9 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Build order: general first, then verticals.
 TARGETS=(
   "general"
-  "fitness"
+  "active"
   "passport"
   "gov"
-  "sport"
   "learning"
   "tourism"
   "performance"

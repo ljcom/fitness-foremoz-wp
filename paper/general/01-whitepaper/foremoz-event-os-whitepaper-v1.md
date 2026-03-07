@@ -6,7 +6,7 @@ Whitepaper v1.0 (General Unified Version)
 
 Foremoz adalah Event Operating System (Event OS) yang memungkinkan individu, komunitas, dan organisasi menciptakan, menjalankan, dan mengembangkan aktivitas berbasis event.
 
-Foremoz dirancang untuk mendukung experience economy dan gig economy di berbagai industri seperti fitness, sport, workshop, seminar, tourism, performance, dan creator events.
+Foremoz dirancang untuk mendukung experience economy dan gig economy di berbagai industri seperti active, learning, tourism, performance, dan creator events.
 
 Dalam Foremoz, event menjadi unit ekonomi utama yang menghubungkan:
 - Members
@@ -51,12 +51,12 @@ Industry layer adalah aplikasi event spesifik per industri.
 Entry point: `foremoz.com/<industry>`
 
 Contoh:
-- `foremoz.com/fitness`
-- `foremoz.com/workshop`
-- `foremoz.com/sport`
-- `foremoz.com/tour`
+- `foremoz.com/active`
+- `foremoz.com/learning`
+- `foremoz.com/performance`
+- `foremoz.com/tourism`
 
-Setiap industry dapat memiliki subdomain sendiri seperti `fitness.foremoz.com`, `workshop.foremoz.com`, dan `tour.foremoz.com`.
+Setiap industry dapat memiliki subdomain sendiri seperti `active.foremoz.com`, `learning.foremoz.com`, dan `tourism.foremoz.com`.
 
 Industry app menangani:
 - event creation
